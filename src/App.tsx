@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LuCoffee, LuHome } from 'lucide-react';
+import { Coffee, Home } from 'lucide-react';
+import { InstallCafeAppButton } from './components/InstallCafeAppButton';
 
 const LeeVaakkiUnifiedApp = () => {
     const [activeTab, setActiveTab] = React.useState('cafeMenu');
@@ -19,6 +20,9 @@ const LeeVaakkiUnifiedApp = () => {
                 {activeTab === 'farmActivities' && <FarmActivities />}
                 {activeTab === 'shoppingCart' && <ShoppingCart />}
             </motion.div>
+            
+            {/* Custom PWA Install prompt trigger */}
+            <InstallCafeAppButton />
         </div>
     );
 };
