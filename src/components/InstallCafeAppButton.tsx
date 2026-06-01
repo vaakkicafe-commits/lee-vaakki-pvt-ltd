@@ -7,6 +7,18 @@ export function InstallCafeAppButton() {
   const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
+    // Only allow installation prompt on leevaakkicafe domain (or localhost for development)
+    const hostname = window.location.hostname;
+    const isAllowedDomain = 
+      hostname.includes('leevaakkicafe') || 
+      hostname.includes('localhost') || 
+      hostname.includes('127.0.0.1');
+
+    if (!isAllowedDomain) {
+      setCanInstall(false);
+      return;
+    }
+
     // Register availability listener and handle cleanup
     const unsubscribe = onInstallAvailabilityChange(setCanInstall);
     return () => unsubscribe();
