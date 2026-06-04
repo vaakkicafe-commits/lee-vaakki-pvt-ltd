@@ -642,38 +642,48 @@ function LeeVaakkiCafeApp() {
               </div>
 
               {/* Swiggy Card */}
-              <div style={{ background: "#fff", border: "1px solid #f0ebe4", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div style={{ background: "#fff", border: "2px solid #ff5722", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 4px 20px rgba(255,87,34,0.12)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <div style={{ background: "#fff3e0", borderRadius: "8px", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>🧡</div>
                 <div>
-                  <div style={{ color: "#ff5722", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px" }}>Coming Soon</div>
+                  <div style={{ color: "#ff5722", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    <span style={{ width: 6, height: 6, background: "#ff5722", borderRadius: "50%", display: "inline-block" }} />
+                    Live on Swiggy
+                  </div>
                   <div style={{ color: "#1A1A1A", fontWeight: 800, fontSize: "1.05rem", marginBottom: "4px" }}>Swiggy</div>
-                  <div style={{ color: "#888", fontSize: "0.8rem", lineHeight: 1.5 }}>We're getting listed on Swiggy. Stay tuned for fast delivery to your doorstep!</div>
+                  <div style={{ color: "#888", fontSize: "0.8rem", lineHeight: 1.5 }}>Order Vaakki Cafe on Swiggy for fast delivery right to your doorstep!</div>
                 </div>
                 <a
-                  href="https://www.swiggy.com"
+                  href="https://www.swiggy.com/city/chennai/vaakki-cafe-thiruporur-main-road-mahabalipuram-rest1020346"
                   target="_blank"
                   rel="noreferrer"
-                  style={{ marginTop: "auto", background: "#f0f0f0", color: "#888", border: "1px solid #e0e0e0", borderRadius: "999px", padding: "0.6rem 1.25rem", fontWeight: 700, fontSize: "0.85rem", cursor: "default", width: "fit-content", textDecoration: "none", pointerEvents: "none", opacity: 0.6 }}
+                  style={{ marginTop: "auto", background: "#ff5722", color: "#fff", border: "none", borderRadius: "999px", padding: "0.6rem 1.25rem", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", width: "fit-content", textDecoration: "none", transition: "background 0.2s", display: "inline-block" }}
+                  onMouseOver={e => (e.currentTarget as HTMLAnchorElement).style.background = "#e64a19"}
+                  onMouseOut={e => (e.currentTarget as HTMLAnchorElement).style.background = "#ff5722"}
                 >
-                  Coming Soon
+                  Order on Swiggy →
                 </a>
               </div>
 
               {/* Zomato Card */}
-              <div style={{ background: "#fff", border: "1px solid #f0ebe4", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div style={{ background: "#fff", border: "2px solid #e53935", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 4px 20px rgba(229,57,53,0.12)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <div style={{ background: "#fce4ec", borderRadius: "8px", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>❤️</div>
                 <div>
-                  <div style={{ color: "#e53935", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px" }}>Coming Soon</div>
+                  <div style={{ color: "#e53935", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    <span style={{ width: 6, height: 6, background: "#e53935", borderRadius: "50%", display: "inline-block" }} />
+                    Live on Zomato
+                  </div>
                   <div style={{ color: "#1A1A1A", fontWeight: 800, fontSize: "1.05rem", marginBottom: "4px" }}>Zomato</div>
-                  <div style={{ color: "#888", fontSize: "0.8rem", lineHeight: 1.5 }}>We'll be on Zomato soon. Track our page for launch offers and exclusive deals!</div>
+                  <div style={{ color: "#888", fontSize: "0.8rem", lineHeight: 1.5 }}>Find Vaakki on Zomato for reviews, ratings, and online ordering!</div>
                 </div>
                 <a
-                  href="https://www.zomato.com"
+                  href="https://www.zomato.com/chennai/vaakki-mahabalipuram/order"
                   target="_blank"
                   rel="noreferrer"
-                  style={{ marginTop: "auto", background: "#f0f0f0", color: "#888", border: "1px solid #e0e0e0", borderRadius: "999px", padding: "0.6rem 1.25rem", fontWeight: 700, fontSize: "0.85rem", cursor: "default", width: "fit-content", textDecoration: "none", pointerEvents: "none", opacity: 0.6 }}
+                  style={{ marginTop: "auto", background: "#e53935", color: "#fff", border: "none", borderRadius: "999px", padding: "0.6rem 1.25rem", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", width: "fit-content", textDecoration: "none", transition: "background 0.2s", display: "inline-block" }}
+                  onMouseOver={e => (e.currentTarget as HTMLAnchorElement).style.background = "#c62828"}
+                  onMouseOut={e => (e.currentTarget as HTMLAnchorElement).style.background = "#e53935"}
                 >
-                  Coming Soon
+                  Order on Zomato →
                 </a>
               </div>
 
