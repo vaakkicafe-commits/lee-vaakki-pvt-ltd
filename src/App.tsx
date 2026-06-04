@@ -1,726 +1,1417 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Coffee, ShoppingCart, User, MapPin, Trash2, X, Plus, Minus, Check, Heart, Loader2, Compass, AlertCircle } from 'lucide-react';
-import { InstallCafeAppButton } from './components/InstallCafeAppButton';
+import React, { useState, useEffect } from 'react';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
+import { InstallCafeAppButton } from './components/InstallCafeAppButton';
+import { ShoppingCart, Trash2, X, Plus, Minus, Check, Loader2, Heart } from 'lucide-react';
+import { CartProvider, useCart, MenuItem } from './CartContext';
 
-// Backend Configuration
-// In dev (no VITE_BACKEND_URL set), use a relative /api path so Vite's proxy
-// forwards requests to http://localhost:8000 without any CORS issues.
-// In production, set VITE_BACKEND_URL to your deployed backend URL.
-const BACKEND_URL = (import.meta as any).env?.VITE_BACKEND_URL || '';
-const API = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
-// For Google OAuth popup we always need the real absolute backend URL
-// (can't use a relative path for window.open or postMessage origin checks)
-const BACKEND_ORIGIN = BACKEND_URL || 'http://localhost:8000';
-
-// ============== TYPES ==============
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  image_url: string;
-  is_veg: boolean;
-  is_bestseller: boolean;
-  is_available: boolean;
-  tags: string[];
-}
-
-interface CartItem {
-  menu_item: MenuItem;
-  quantity: number;
-}
-
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  is_admin: boolean;
-}
-
-// Fallback Cafe items if backend does not list them
-const FALLBACK_CAFE_ITEMS: MenuItem[] = [
-  { id: "cafe_1", name: "Premium Espresso", description: "Rich, dark espresso shot pulled from freshly ground Arabica beans", price: 160, category: "Coffee", image_url: "https://images.unsplash.com/photo-1510707577719-094119f7cc54?q=80&w=800", is_veg: true, is_bestseller: true, is_available: true, tags: ["Signature", "Hot"] },
-  { id: "cafe_2", name: "Classic Cappuccino", description: "Smooth espresso blended with steamed milk and topped with rich foam", price: 190, category: "Coffee", image_url: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?q=80&w=800", is_veg: true, is_bestseller: true, is_available: true, tags: ["Best Seller"] },
-  { id: "cafe_3", name: "Salted Caramel Latte", description: "Espresso shot with rich milk, sweet caramel syrup, and a touch of sea salt", price: 220, category: "Coffee", image_url: "https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=800", is_veg: true, is_bestseller: false, is_available: true, tags: ["Sweet", "Cold Option"] },
-  { id: "cafe_4", name: "Artisan Butter Croissant", description: "Flaky, layered French pastry baked fresh with premium European butter", price: 130, category: "Pastries", image_url: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=800", is_veg: true, is_bestseller: true, is_available: true, tags: ["Freshly Baked"] },
-  { id: "cafe_5", name: "Blueberry Cheesecake", description: "Creamy New York style cheesecake topped with rich, tart blueberry compote", price: 260, category: "Desserts", image_url: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=800", is_veg: true, is_bestseller: true, is_available: true, tags: ["Premium"] },
-  { id: "cafe_6", name: "Matcha Green Tea Latte", description: "Pure Japanese ceremonial matcha whisked with velvety steamed milk", price: 240, category: "Teas", image_url: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=800", is_veg: true, is_bestseller: false, is_available: true, tags: ["Organic", "Healthy"] },
+// ---- Menu Data ----
+const ALL_MENU_ITEMS: MenuItem[] = [
+  { id: 'cafe_1', name: 'Premium Espresso',       price: 160, category: 'Coffee',   bestseller: true,  img: 'https://images.unsplash.com/photo-1510707577719-094119f7cc54?q=80&w=600', description: 'Rich, bold double shot espresso using 100% Arabica beans.' },
+  { id: 'cafe_2', name: 'Classic Cappuccino',     price: 190, category: 'Coffee',   bestseller: true,  img: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?q=80&w=600', description: 'Vibrant espresso, steamed milk, and a thick layer of velvety foam.' },
+  { id: 'cafe_3', name: 'Salted Caramel Latte',   price: 220, category: 'Coffee',   bestseller: false, img: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600', description: 'Espresso shot with steamed milk, sweet caramel syrup, and a sea salt pinch.' },
+  { id: 'cafe_4', name: 'Cold Brew Float',        price: 210, category: 'Coffee',   bestseller: false, img: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=600', description: 'Slow-steeped cold brew topped with premium vanilla ice cream.' },
+  { id: 'cafe_5', name: 'Matcha Green Tea Latte', price: 240, category: 'Tea',      bestseller: false, img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=600', description: 'Pure ceremonial Japanese matcha whisked with creamy steamed milk.' },
+  { id: 'cafe_6', name: 'Spiced Masala Chai',     price: 90,  category: 'Tea',      bestseller: true,  img: 'https://images.unsplash.com/photo-1561336313-0bd5e0b27ec8?q=80&w=600', description: 'Traditional Indian tea brewed with aromatic whole spices and fresh milk.' },
+  { id: 'cafe_7', name: 'Margherita Pizza',       price: 320, category: 'Pizza',    bestseller: true,  img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600', description: 'San Marzano tomatoes, fresh mozzarella, sweet basil, and olive oil.' },
+  { id: 'cafe_8', name: 'Pesto Veggie Pizza',     price: 370, category: 'Pizza',    bestseller: false, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600', description: 'Herby basil pesto, bell peppers, olives, mushrooms, and mozzarella.' },
+  { id: 'cafe_9', name: 'Classic Beef Burger',    price: 280, category: 'Burger',   bestseller: true,  img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600', description: 'Juicy flame-grilled beef patty, cheddar, lettuce, tomato, and house sauce.' },
+  { id: 'cafe_10', name: 'Crispy Chicken Burger',  price: 260, category: 'Burger',   bestseller: false, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=600', description: 'Golden crispy chicken breast, spicy mayo, and pickles on a toasted bun.' },
+  { id: 'cafe_11', name: 'Artisan Butter Croissant', price: 130, category: 'Breads', bestseller: true,  img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600', description: 'Flaky, multi-layered French pastry baked fresh with pure premium butter.' },
+  { id: 'cafe_12', name: 'Garlic Focaccia',        price: 150, category: 'Breads',   bestseller: false, img: 'https://images.unsplash.com/photo-1574234363531-a0ed40e7bcd6?q=80&w=600', description: 'Liguria-style flatbread topped with roasted garlic, rosemary, and olive oil.' },
+  { id: 'cafe_13', name: 'Blueberry Cheesecake',   price: 260, category: 'Desserts', bestseller: true,  img: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=600', description: 'Creamy baked cheesecake with a graham cracker crust and sweet blueberry compote.' },
+  { id: 'cafe_14', name: 'Belgian Waffle',         price: 220, category: 'Desserts', bestseller: false, img: 'https://images.unsplash.com/photo-1598214886806-c9d5d96e1c6d?q=80&w=600', description: 'Warm, fluffy waffle served with pure maple syrup and fresh whipped cream.' },
+  { id: 'cafe_15', name: 'Veg Club Sandwich',      price: 180, category: 'Snacks',   bestseller: false, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?q=80&w=600', description: 'Double-decker sandwich loaded with crisp veggies, cheese, and herb spread.' },
+  { id: 'cafe_16', name: 'Meal for Two',           price: 380, category: 'Combo',    bestseller: false, img: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600', description: 'Perfect café combo: Choose any 2 coffees, 1 pizza, and 1 pastry.' },
 ];
 
-// ============== CONTEXTS ==============
-interface AuthContextType {
-  user: UserProfile | null;
-  token: string | null;
-  loading: boolean;
-  loginWithGoogle: () => Promise<UserProfile>;
-  logout: () => void;
+// ---- Backend Configuration ----
+const BACKEND_URL = (import.meta as any).env?.VITE_BACKEND_URL || '';
+const API = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
+
+// ---- Categories (Dhaba-style) ----
+const CATEGORIES = [
+  { name: 'All',      icon: '🍽️', color: '#13253a' },
+  { name: 'Coffee',   icon: '☕',  color: '#6F4E37' },
+  { name: 'Tea',      icon: '🍵',  color: '#2e7d32' },
+  { name: 'Pizza',    icon: '🍕',  color: '#e53935' },
+  { name: 'Burger',   icon: '🍔',  color: '#f0a500' },
+  { name: 'Breads',   icon: '🥐',  color: '#d4a574' },
+  { name: 'Desserts', icon: '🍰',  color: '#ec407a' },
+  { name: 'Snacks',   icon: '🥪',  color: '#1976d2' },
+  { name: 'Combo',    icon: '🎁',  color: '#7b1fa2' },
+];
+
+interface UserProfile {
+  name: string;
+  email: string;
+  photoURL: string | null;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
-};
-
-interface CartContextType {
-  items: CartItem[];
-  addItem: (item: MenuItem, qty?: number) => void;
-  updateQuantity: (itemId: string, qty: number) => void;
-  removeItem: (itemId: string) => void;
-  clearCart: () => void;
-  itemCount: number;
-  subtotal: number;
-}
-
-const CartContext = createContext<CartContextType | undefined>(undefined);
-
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (!context) throw new Error('useCart must be used within a CartProvider');
-  return context;
-};
-
-// ============== PROVIDERS ==============
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+function LeeVaakkiCafeApp() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('cafe_token'));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutSuccess, setCheckoutSuccess] = useState<string | null>(null);
+  const [placingOrder, setPlacingOrder] = useState(false);
 
+  // Custom Online Ordering & Admin states
+  const [onlineOrderingOpen, setOnlineOrderingOpen] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [updatingConfig, setUpdatingConfig] = useState(false);
+
+  // Cart operations from context
+  const { items, addItem, updateQuantity, removeItem, clearCart, itemCount, subtotal } = useCart();
+
+  // Check admin status helper
+  const checkAdminStatus = async (userToken: string) => {
+    try {
+      const res = await fetch(`${API}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const cafeRole = data.roles?.cafe;
+        setIsAdmin(cafeRole === 'admin' || cafeRole === 'employee');
+      }
+    } catch (e) {
+      console.error('Failed to check admin status:', e);
+    }
+  };
+
+  // Fetch store status & Restore session on load
   useEffect(() => {
-    const fetchUser = async (authToken: string) => {
+    const fetchOrderingStatus = async () => {
       try {
-        const res = await fetch(`${API}/auth/me`, {
-          headers: { Authorization: `Bearer ${authToken}` },
-        });
+        const res = await fetch(`${API}/config/online-ordering`);
         if (res.ok) {
           const data = await res.json();
-          setUser(data);
-        } else {
-          logout();
+          setOnlineOrderingOpen(data.onlineOrderingOpen);
         }
-      } catch (err) {
-        console.error('Failed to fetch user profiles:', err);
-        logout();
-      } finally {
-        setLoading(false);
+      } catch (e) {
+        console.error('Failed to fetch online ordering status:', e);
       }
     };
+    fetchOrderingStatus();
 
-    if (token) {
-      fetchUser(token);
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
-
-  const loginWithGoogle = async (): Promise<UserProfile> => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const token = await user.getIdToken();
-      
-      const userProfile: UserProfile = {
-        id: user.uid,
-        name: user.displayName || 'Guest',
-        email: user.email || '',
-        phone: user.phoneNumber || '',
-        is_admin: false,
-      };
-
-      localStorage.setItem('cafe_token', token);
-      setToken(token);
-      setUser(userProfile);
-      
-      return userProfile;
-    } catch (error) {
-      console.error('Firebase Google Login Error:', error);
-      throw error;
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('cafe_token');
-    setToken(null);
-    setUser(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, token, loading, loginWithGoogle, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('cafe_cart');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('cafe_cart', JSON.stringify(items));
-  }, [items]);
-
-  const addItem = (menuItem: MenuItem, quantity = 1) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.menu_item.id === menuItem.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.menu_item.id === menuItem.id ? { ...i, quantity: i.quantity + quantity } : i
-        );
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          localStorage.setItem('cafe_token', idToken);
+          setToken(idToken);
+          setUser({
+            name: firebaseUser.displayName || 'Guest',
+            email: firebaseUser.email || '',
+            photoURL: firebaseUser.photoURL,
+          });
+          checkAdminStatus(idToken);
+        } catch (e) {
+          console.error('Failed to get user id token:', e);
+        }
+      } else {
+        localStorage.removeItem('cafe_token');
+        setToken(null);
+        setUser(null);
+        setIsAdmin(false);
       }
-      return [...prev, { menu_item: menuItem, quantity }];
     });
-  };
+    return () => unsubscribe();
+  }, []);
 
-  const updateQuantity = (itemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      setItems((prev) => prev.filter((i) => i.menu_item.id !== itemId));
-    } else {
-      setItems((prev) =>
-        prev.map((i) => (i.menu_item.id === itemId ? { ...i, quantity } : i))
-      );
+  const handleToggleOrdering = async (open: boolean) => {
+    if (!token) return;
+    setUpdatingConfig(true);
+    try {
+      const res = await fetch(`${API}/admin/online-ordering`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ open, brand: 'cafe' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOnlineOrderingOpen(data.onlineOrderingOpen);
+      } else {
+        alert('Failed to update online ordering status');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error updating online ordering status');
+    } finally {
+      setUpdatingConfig(false);
     }
   };
-
-  const removeItem = (itemId: string) => {
-    setItems((prev) => prev.filter((i) => i.menu_item.id !== itemId));
-  };
-
-  const clearCart = () => setItems([]);
-
-  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-  const subtotal = items.reduce((sum, i) => sum + i.menu_item.price * i.quantity, 0);
-
-  return (
-    <CartContext.Provider
-      value={{ items, addItem, updateQuantity, removeItem, clearCart, itemCount, subtotal }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
-};
-
-// ============== COMPONENTS ==============
-
-// Sleek glassmorphic checkout gate modal
-const GoogleLoginModal = ({
-  isOpen,
-  onClose,
-  onSuccess,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-}) => {
-  const { loginWithGoogle } = useAuth();
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  if (!isOpen) return null;
 
   const handleGoogleLogin = async () => {
-    setError('');
     setLoading(true);
     try {
-      await loginWithGoogle();
-      onSuccess();
-    } catch (err: any) {
-      if (err.message !== 'Closed by user' && err.message !== 'Popup blocked') {
-        setError('Authentication failed. Please try again.');
-      }
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      localStorage.setItem('cafe_token', idToken);
+      setToken(idToken);
+      setUser({
+        name: result.user.displayName || 'Guest',
+        email: result.user.email || '',
+        photoURL: result.user.photoURL,
+      });
+      checkAdminStatus(idToken);
+    } catch (err) {
+      console.error('Google sign-in failed:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="relative w-[90%] max-w-[420px] rounded-3xl bg-[#FAF6F0] p-8 text-center shadow-2xl border border-[#6F4E37]/10"
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 rounded-full p-1.5 text-gray-400 hover:bg-[#6F4E37]/5 hover:text-[#6F4E37] transition-all"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#6F4E37]/10 text-2xl">
-          ☕
-        </div>
-
-        <h3 className="mb-2 text-2xl font-bold text-[#3E2723]">Sign in to Checkout</h3>
-        <p className="mb-6 text-sm text-[#5D4037] leading-relaxed">
-          Please log in with Google to place your order securely and proceed to checkout.
-        </p>
-
-        {error && (
-          <div className="mb-4 rounded-xl bg-red-50 p-3 text-left text-xs text-red-600 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handleGoogleLogin}
-          className="flex w-full items-center justify-center gap-3 rounded-full border border-gray-300 bg-white px-5 py-3.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-[0.98] transition-all disabled:opacity-50"
-        >
-          {loading ? (
-            <Loader2 className="w-5 h-5 animate-spin text-[#6F4E37]" />
-          ) : (
-            <>
-              <svg className="w-5 h-5" viewBox="0 0 18 18">
-                <path
-                  fill="#4285F4"
-                  d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.8 2.72v2.24h2.9c1.7-1.57 2.7-3.88 2.7-6.59z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M9 18c2.43 0 4.47-.8 5.96-2.2l-2.9-2.24c-.8.54-1.84.87-3.06.87-2.35 0-4.34-1.59-5.05-3.73H.95v2.3C2.43 15.89 5.5 18 9 18z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M3.95 10.7c-.18-.54-.28-1.12-.28-1.7s.1-1.16.28-1.7V5H.95C.35 6.2 0 7.57 0 9s.35 2.8 1 4l2.95-2.3z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.4C13.46.97 11.43 0 9 0 5.5 0 2.43 2.11.95 5.04l2.95 2.3c.71-2.14 2.7-3.76 5.05-3.76z"
-                />
-              </svg>
-              <span>Continue with Google</span>
-            </>
-          )}
-        </button>
-
-        <div className="mt-6 text-[10px] text-gray-400">
-          By signing in, you agree to our Terms of Service & Privacy Policy.
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
-// Storefront components
-const CafeNavbar = ({ onCartClick }: { onCartClick: () => void }) => {
-  const { user, logout, loginWithGoogle } = useAuth();
-  const { itemCount } = useCart();
-  const [profileOpen, setProfileOpen] = useState(false);
-
-  return (
-    <nav className="sticky top-0 z-40 bg-white/70 backdrop-blur-md border-b border-[#6F4E37]/5 px-6 py-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-2xl">☕</span>
-        <span className="text-xl font-extrabold tracking-tight text-[#3E2723]">
-          Lee Vaakki <span className="text-[#6F4E37]">Café</span>
-        </span>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <button
-          onClick={onCartClick}
-          className="relative rounded-full p-2.5 bg-[#6F4E37]/5 text-[#6F4E37] hover:bg-[#6F4E37]/10 active:scale-95 transition-all"
-        >
-          <ShoppingCart className="w-5 h-5" />
-          {itemCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#E53935] text-[10px] font-bold text-white ring-2 ring-white">
-              {itemCount}
-            </span>
-          )}
-        </button>
-
-        {user ? (
-          <div className="relative">
-            <button
-              onClick={() => setProfileOpen(!profileOpen)}
-              className="flex items-center gap-2 rounded-full border border-[#6F4E37]/10 bg-white px-3 py-1.5 hover:shadow-sm"
-            >
-              <User className="w-4 h-4 text-[#6F4E37]" />
-              <span className="text-xs font-semibold text-[#3E2723] max-w-[80px] truncate">
-                {user.name.split(' ')[0]}
-              </span>
-            </button>
-            {profileOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-white p-2 shadow-xl border border-gray-100 animate-slide-up">
-                <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Account Settings
-                </div>
-                <button
-                  onClick={() => {
-                    logout();
-                    setProfileOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <button
-            onClick={() => loginWithGoogle().catch(() => {})}
-            className="rounded-full bg-[#6F4E37] hover:bg-[#5C3E2B] px-5 py-2 text-xs font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer"
-          >
-            Google Sign In
-          </button>
-        )}
-      </div>
-    </nav>
-  );
-};
-
-const MenuItemCard = ({ item }: { item: MenuItem }) => {
-  const { addItem, items, updateQuantity } = useCart();
-  const cartItem = items.find((i) => i.menu_item.id === item.id);
-  const quantity = cartItem?.quantity || 0;
-
-  return (
-    <div className="group rounded-3xl bg-white p-4 shadow-md hover:shadow-xl border border-[#6F4E37]/5 transition-all flex flex-col justify-between">
-      <div className="relative mb-4 overflow-hidden rounded-2xl pt-[80%] bg-gray-50">
-        <img
-          src={item.image_url}
-          alt={item.name}
-          className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        {item.is_bestseller && (
-          <span className="absolute top-3 left-3 rounded-full bg-[#6F4E37] px-3 py-1 text-[10px] font-bold text-white shadow-md">
-            ⭐ Bestseller
-          </span>
-        )}
-      </div>
-
-      <div>
-        <div className="flex items-start justify-between mb-1.5">
-          <h4 className="font-extrabold text-gray-800 text-base leading-tight group-hover:text-[#6F4E37] transition-colors">
-            {item.name}
-          </h4>
-          <span className="font-bold text-base text-[#6F4E37] shrink-0 ml-2">₹{item.price}</span>
-        </div>
-        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-4">
-          {item.description}
-        </p>
-      </div>
-
-      <div className="mt-auto">
-        {quantity === 0 ? (
-          <button
-            onClick={() => addItem(item)}
-            className="w-full rounded-full bg-[#6F4E37]/5 text-[#6F4E37] hover:bg-[#6F4E37] hover:text-white py-2 text-xs font-bold active:scale-95 transition-all"
-          >
-            Add to Order
-          </button>
-        ) : (
-          <div className="flex items-center justify-between rounded-full bg-[#FAF6F0] p-1 border border-[#6F4E37]/10">
-            <button
-              onClick={() => updateQuantity(item.id, quantity - 1)}
-              className="rounded-full p-1.5 bg-white text-[#6F4E37] hover:bg-gray-100"
-            >
-              <Minus className="w-3.5 h-3.5" />
-            </button>
-            <span className="text-xs font-bold text-[#3E2723]">{quantity}</span>
-            <button
-              onClick={() => updateQuantity(item.id, quantity + 1)}
-              className="rounded-full p-1.5 bg-white text-[#6F4E37] hover:bg-gray-100"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Core application view wrapper
-const LeeVaakkiCafeApp = () => {
-  const { user, token } = useAuth();
-  const { items, itemCount, subtotal, clearCart, updateQuantity, removeItem } = useCart();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(FALLBACK_CAFE_ITEMS);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [cartOpen, setCartOpen] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [checkoutSuccess, setCheckoutSuccess] = useState<string | null>(null);
-  const [loadingCheckout, setLoadingCheckout] = useState(false);
-
-  useEffect(() => {
-    const loadMenu = async () => {
-      try {
-        const res = await fetch(`${API}/menu`);
-        if (res.ok) {
-          const data = await res.json();
-          // Filter items that fit a premium Cafe environment
-          const cafeCats = ['Beverages', 'Desserts', 'Snacks', 'Coffee', 'Pastries'];
-          const filtered = data.items.filter((i: MenuItem) => cafeCats.includes(i.category));
-          if (filtered.length > 0) {
-            setMenuItems(filtered);
-          }
-        }
-      } catch (err) {
-        console.warn('Backend load failed, utilizing high-fidelity fallback items');
-      }
-    };
-    loadMenu();
-  }, []);
-
-  const categories = ['All', ...new Set(menuItems.map((i) => i.category))];
-
-  const filteredItems =
-    selectedCategory === 'All'
-      ? menuItems
-      : menuItems.filter((i) => i.category === selectedCategory);
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+    } catch (err) {
+      console.error('Failed to sign out from Firebase:', err);
+    }
+    localStorage.removeItem('cafe_token');
+    setToken(null);
+    setUser(null);
+    setIsAdmin(false);
+    clearCart();
+  };
 
   const handleCheckout = async () => {
     if (!user) {
-      setShowLoginModal(true);
+      handleGoogleLogin();
       return;
     }
-
-    setLoadingCheckout(true);
+    setPlacingOrder(true);
     try {
+      // 1. Register order on the backend (returns Razorpay Order ID)
       const orderData = {
-        items: items.map((i) => ({ menu_item_id: i.menu_item.id, quantity: i.quantity })),
+        items: items.map(i => ({ menu_item_id: i.menu_item.id, quantity: i.quantity })),
         order_type: 'dine-in',
         payment_method: 'online',
-        customer_phone: user.phone || '9999999999',
+        customer_phone: '9999999999', // Fallback or prompt
       };
 
       const res = await fetch(`${API}/orders/own/cafe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(orderData),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setCheckoutSuccess(data.order_id);
-        clearCart();
-        setCartOpen(false);
-      } else {
-        alert('Order creation failed on backend.');
+      if (!res.ok) {
+        throw new Error('Order registration failed on API server');
       }
+
+      const data = await res.json(); // { order_id, amount, currency, local_order_id }
+
+      // 2. Open Razorpay Checkout Modal
+      const options = {
+        key: (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || 'rzp_test_your_mock_key_id',
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Lee Vaakki Cafe',
+        description: 'Artisan Coffee & Pastries Order',
+        order_id: data.order_id,
+        handler: async function (response: any) {
+          setPlacingOrder(true);
+          try {
+            // Verify payment signature on backend
+            const verifyRes = await fetch(`${API}/payments/verify`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                local_order_id: data.local_order_id,
+              }),
+            });
+
+            if (verifyRes.ok) {
+              setCheckoutSuccess(data.local_order_id);
+              clearCart();
+              setCartOpen(false);
+            } else {
+              alert('Payment signature verification failed.');
+            }
+          } catch (err) {
+            console.error('Error during signature verification:', err);
+            alert('Unable to verify payment with server.');
+          } finally {
+            setPlacingOrder(false);
+          }
+        },
+        prefill: {
+          name: user.name,
+          email: user.email,
+          contact: '',
+        },
+        theme: {
+          color: '#13253a',
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (resp: any) {
+        alert(`Payment failed: ${resp.error.description}`);
+      });
+      rzp.open();
+
     } catch (err) {
-      console.error(err);
-      alert('Network error placing order.');
+      console.error('Checkout failed:', err);
+      alert('Failed to initialize checkout. Please try again.');
     } finally {
-      setLoadingCheckout(false);
+      setPlacingOrder(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#FDFBF7] pb-24 text-gray-800">
-      <CafeNavbar onCartClick={() => setCartOpen(true)} />
+  const filteredItems = selectedCategory === 'All'
+    ? ALL_MENU_ITEMS
+    : ALL_MENU_ITEMS.filter(i => i.category === selectedCategory);
 
-      {/* Hero Banner */}
-      <header className="px-6 py-12 text-center max-w-4xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#3E2723] mb-4">
-          Artisan Coffee & <span className="text-[#6F4E37]">Gourmet Delights</span>
-        </h1>
-        <p className="text-[#5D4037] text-sm md:text-base max-w-lg mx-auto leading-relaxed">
-          Sip on freshly roasted specialty blends and indulge in sweet French pastries baked fresh every morning.
-        </p>
+  return (
+    <div style={{ fontFamily: "'Inter', 'Roboto', sans-serif", minHeight: '100vh', background: '#f7f4ef', position: 'relative' }}>
+      
+      {/* Dynamic Keyframes Injection */}
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .slide-in-drawer {
+          animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .fade-in-overlay {
+          animation: fadeIn 0.25s ease-out forwards;
+        }
+        .scrollbar-hidden::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hidden {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+
+      {/* ===== HEADER ===== */}
+      <header style={{
+        background: '#13253a',
+        padding: '0 2rem',
+        height: '64px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        boxShadow: '0 2px 16px rgba(0,0,0,0.18)',
+      }}>
+        {/* Logo & Status Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.4rem' }}>☕</span>
+            <span style={{ color: '#fff', fontWeight: 800, fontSize: '1.15rem', letterSpacing: '0.04em' }}>
+              VAAKKI <span style={{ color: '#f0c040' }}>CAFE</span>
+            </span>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            background: onlineOrderingOpen ? 'rgba(67,160,71,0.15)' : 'rgba(229,57,53,0.15)',
+            border: `1px solid ${onlineOrderingOpen ? 'rgba(67,160,71,0.3)' : 'rgba(229,57,53,0.3)'}`,
+            borderRadius: '999px',
+            padding: '0.25rem 0.65rem',
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            color: onlineOrderingOpen ? '#81c784' : '#ef5350',
+          }}>
+            <span style={{
+              width: 6,
+              height: 6,
+              background: onlineOrderingOpen ? '#43a047' : '#e53935',
+              borderRadius: '50%',
+              display: 'inline-block'
+            }} />
+            {onlineOrderingOpen ? 'OPEN' : 'CLOSED'}
+          </div>
+        </div>
+
+        {/* Right: Menu Navigation, Cart, Login */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Admin panel button */}
+          {isAdmin && (
+            <button
+              onClick={() => setAdminOpen(true)}
+              style={{
+                background: 'rgba(240,192,64,0.12)',
+                border: '1px solid rgba(240,192,64,0.3)',
+                borderRadius: '6px',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: '#f0c040',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => e.currentTarget.style.background = 'rgba(240,192,64,0.22)'}
+              onMouseOut={e => e.currentTarget.style.background = 'rgba(240,192,64,0.12)'}
+            >
+              ⚙️ Admin
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            style={{
+              background: '#e53935', color: '#fff', border: 'none',
+              borderRadius: '6px', padding: '0.35rem 1rem',
+              fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.08em', cursor: 'pointer',
+            }}
+          >
+            MENU ↓
+          </button>
+
+          {/* Cart Icon Button */}
+          <button
+            onClick={() => setCartOpen(true)}
+            style={{
+              position: 'relative',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#fff',
+              transition: 'all 0.2s',
+            }}
+            onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+            onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          >
+            <ShoppingCart size={18} />
+            {itemCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-5px',
+                right: '-5px',
+                background: '#e53935',
+                color: '#fff',
+                fontSize: '0.65rem',
+                fontWeight: 800,
+                borderRadius: '50%',
+                minWidth: '18px',
+                height: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 4px',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+              }}>
+                {itemCount}
+              </span>
+            )}
+          </button>
+
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              {user.photoURL && (
+                <img src={user.photoURL} alt={user.name}
+                  style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #f0c040' }} />
+              )}
+              <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}>
+                {user.name.split(' ')[0]}
+              </span>
+              <button onClick={handleLogout} style={{
+                background: 'transparent', border: '1px solid rgba(255,255,255,0.3)',
+                color: '#fff', borderRadius: '6px', padding: '0.3rem 0.75rem',
+                fontSize: '0.75rem', cursor: 'pointer',
+              }}>
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button onClick={handleGoogleLogin} disabled={loading} style={{
+              background: loading ? '#555' : '#e53935', color: '#fff', border: 'none',
+              borderRadius: '8px', padding: '0.4rem 1.1rem', fontWeight: 700,
+              fontSize: '0.82rem', letterSpacing: '0.04em',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: '0.4rem', transition: 'background 0.2s',
+            }}>
+              {loading ? 'Signing in...' : 'LOGIN / SIGN UP'}
+            </button>
+          )}
+        </div>
       </header>
 
-      {/* Categories */}
-      <section className="flex gap-2.5 overflow-x-auto px-6 mb-8 scrollbar-hide max-w-6xl mx-auto">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`rounded-full px-5 py-2.5 text-xs font-bold shrink-0 transition-all ${
-              selectedCategory === cat
-                ? 'bg-[#6F4E37] text-white shadow-md'
-                : 'bg-white border border-[#6F4E37]/10 text-[#5D4037] hover:bg-[#6F4E37]/5'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </section>
-
-      {/* Grid */}
-      <main className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-6 max-w-6xl mx-auto">
-        {filteredItems.map((item) => (
-          <MenuItemCard key={item.id} item={item} />
-        ))}
-      </main>
-
-      {/* Floating cart drawer */}
-      <AnimatePresence>
-        {cartOpen && (
-          <div className="fixed inset-0 z-50 overflow-hidden">
-            <div
-              className="absolute inset-0 bg-black/40 backdrop-blur-xs"
-              onClick={() => setCartOpen(false)}
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute right-0 top-0 bottom-0 w-full max-w-[420px] bg-white shadow-2xl flex flex-col"
-            >
-              <div className="flex items-center justify-between border-b border-gray-100 p-6">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5 text-[#6F4E37]" /> Your Order
-                </h3>
-                <button
-                  onClick={() => setCartOpen(false)}
-                  className="rounded-full p-1.5 hover:bg-gray-100 text-gray-400"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+      {/* ===== HERO SECTION ===== */}
+      <main>
+        <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem 2rem' }}>
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr',
+            gap: '3rem', alignItems: 'center',
+          }}>
+            {/* Left Content */}
+            <div>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                background: '#e8f5e9', color: '#2e7d32', borderRadius: '999px',
+                padding: '0.35rem 1rem', fontSize: '0.78rem', fontWeight: 600,
+                marginBottom: '1.5rem', border: '1px solid #a5d6a7',
+              }}>
+                <span style={{ width: 7, height: 7, background: '#43a047', borderRadius: '50%', display: 'inline-block' }} />
+                Now Serving in Mahabalipuram
               </div>
 
-              {items.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                  <span className="text-4xl mb-4">🥐</span>
-                  <h4 className="font-bold text-gray-800 mb-1">Your bag is empty</h4>
-                  <p className="text-xs text-gray-400 leading-normal max-w-[200px]">
-                    Browse our gourmet selection and add sweet delicacies!
-                  </p>
+              <h1 style={{
+                fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 900, color: '#13253a',
+                lineHeight: 1.15, marginBottom: '1.2rem', letterSpacing: '-0.02em',
+              }}>
+                Fresh Brews,<br />
+                Quick Bites,<br />
+                &amp; Feel-Good<br />
+                Meals.
+              </h1>
+
+              <p style={{
+                color: '#5a6a7a', fontSize: '0.95rem', lineHeight: 1.7,
+                maxWidth: '420px', marginBottom: '2rem',
+              }}>
+                Experience the perfect blend of casual dining and coffee-shop vibes near Mahabalipuram.
+                From breakfast to dinner, we've got your cravings covered.
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginBottom: '2rem' }}>
+                <button
+                  onClick={() => document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  style={{
+                    background: '#13253a', color: '#fff', border: 'none',
+                    borderRadius: '999px', padding: '0.75rem 1.75rem',
+                    fontWeight: 700, fontSize: '0.92rem', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    boxShadow: '0 4px 16px rgba(19,37,58,0.18)', transition: 'transform 0.15s, box-shadow 0.15s',
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(19,37,58,0.24)';
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(19,37,58,0.18)';
+                  }}
+                >
+                  View Menu ↓
+                </button>
+                <a href="#about" style={{
+                  color: '#13253a', fontWeight: 600, fontSize: '0.92rem', textDecoration: 'none',
+                  borderBottom: '2px solid transparent', paddingBottom: '2px', transition: 'border-color 0.2s',
+                }}
+                  onMouseOver={e => (e.currentTarget.style.borderColor = '#13253a')}
+                  onMouseOut={e => (e.currentTarget.style.borderColor = 'transparent')}
+                >
+                  Our Story
+                </a>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#5a6a7a', fontSize: '0.82rem', fontWeight: 500 }}>
+                  <span>☕</span> Premium Coffee
                 </div>
-              ) : (
-                <>
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {items.map(({ menu_item, quantity }) => (
-                      <div
-                        key={menu_item.id}
-                        className="flex items-center gap-4 border-b border-gray-50 pb-4"
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#5a6a7a', fontSize: '0.82rem', fontWeight: 500 }}>
+                  <span>🍽️</span> Fresh Ingredients
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Photo + Badge */}
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                borderRadius: '20px', overflow: 'hidden',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                aspectRatio: '4/3', background: '#ddd',
+              }}>
+                <img
+                  src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200"
+                  alt="Vaakki Cafe Interior"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              </div>
+              <div style={{
+                position: 'absolute', bottom: '1.5rem', left: '1.5rem',
+                background: '#f0c040', borderRadius: '12px', padding: '0.75rem 1.2rem',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+              }}>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#13253a' }}>Meal for Two</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#13253a' }}>₹380</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== ONLINE ORDERING SPLASH ===== */}
+        <section style={{ background: "#fdfcfa", padding: "4rem 2rem", borderTop: "1px solid #f0ebe4" }}>
+          <div style={{ textAlign: "center" }}>
+            <span style={{ color: "#e53935", fontWeight: "700", fontSize: "14px", letterSpacing: "1px", textTransform: "uppercase" }}>ONLINE ORDERING</span>
+            <h2 style={{ fontSize: "28px", fontWeight: "800", color: "#1A1A1A", marginTop: "8px", marginBottom: "8px" }}>How would you like to order today?</h2>
+            <p style={{ color: "#666", fontSize: "15px", maxWidth: "600px", margin: "0 auto", marginBottom: "2rem" }}>
+              Craving our signature Napoleon pizza or house cappuccino? Order directly from the café for the best value and special offers!
+            </p>
+            
+            <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: "12px", padding: "1.5rem", display: "inline-block", textAlign: "left" }}>
+              <span style={{ fontSize: "13px", fontWeight: "600", color: "#888", textTransform: "uppercase", letterSpacing: "0.5px" }}>Soon you can also order from:</span>
+              <div style={{ display: "flex", gap: "1rem", marginTop: "1rem", alignItems: "center" }}>
+                <span style={{ fontWeight: "600", color: "#1A1A1A" }}>Swiggy</span>
+                <span style={{ color: "#ccc" }}>•</span>
+                <span style={{ fontWeight: "600", color: "#1A1A1A" }}>Zomato</span>
+                <span style={{ color: "#ccc" }}>•</span>
+                <span style={{ fontWeight: "600", color: "#1A1A1A" }}>Dining partners</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== CATEGORY ICON BAR (Dhaba-style) ===== */}
+        <section id="menu-section" style={{
+          background: '#fff',
+          borderTop: '1px solid #f0ebe4',
+          borderBottom: '1px solid #f0ebe4',
+          padding: '2.5rem 2rem',
+        }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <h2 style={{
+              fontSize: '1.6rem', fontWeight: 800, color: '#13253a',
+              marginBottom: '0.4rem',
+            }}>
+              What's on your mind?
+            </h2>
+            <p style={{ color: '#5a6a7a', fontSize: '0.88rem', marginBottom: '1.8rem' }}>
+              Browse by category — click to filter the menu below.
+            </p>
+
+            {/* Category Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+              gap: '1rem',
+            }}>
+              {CATEGORIES.map(cat => {
+                const isActive = selectedCategory === cat.name;
+                return (
+                  <div
+                    key={cat.name}
+                    onClick={() => setSelectedCategory(cat.name)}
+                    style={{
+                      background: isActive ? cat.color : '#fff',
+                      borderRadius: '14px',
+                      padding: '1.2rem 0.75rem',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      border: `2px solid ${isActive ? cat.color : 'rgba(0,0,0,0.07)'}`,
+                      boxShadow: isActive ? `0 4px 16px ${cat.color}40` : '0 2px 8px rgba(0,0,0,0.05)',
+                      transition: 'all 0.2s ease',
+                      transform: isActive ? 'translateY(-3px)' : 'none',
+                    }}
+                    onMouseOver={e => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLDivElement).style.borderColor = cat.color;
+                        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
+                        (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 16px ${cat.color}30`;
+                      }
+                    }}
+                    onMouseOut={e => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,0,0,0.07)';
+                        (e.currentTarget as HTMLDivElement).style.transform = 'none';
+                        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+                      }
+                    }}
+                  >
+                    {/* Icon circle */}
+                    <div style={{
+                      width: '54px', height: '54px', borderRadius: '50%',
+                      background: isActive ? 'rgba(255,255,255,0.22)' : `${cat.color}18`,
+                      border: `2px solid ${isActive ? 'rgba(255,255,255,0.35)' : cat.color + '35'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      margin: '0 auto 0.7rem',
+                      fontSize: '1.6rem',
+                      transition: 'transform 0.2s',
+                    }}>
+                      {cat.icon}
+                    </div>
+                    <span style={{
+                      fontWeight: 700, fontSize: '0.78rem',
+                      color: isActive ? '#fff' : '#3a4a5a',
+                      letterSpacing: '0.02em',
+                    }}>
+                      {cat.name}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== MENU SECTION (inline, filterable) ===== */}
+        <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem' }}>
+          {/* Section header */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            marginBottom: '1.75rem', flexWrap: 'wrap', gap: '0.75rem',
+          }}>
+            <div>
+              <h2 style={{ fontWeight: 800, color: '#13253a', fontSize: '1.4rem', margin: 0 }}>
+                {selectedCategory === 'All' ? '🍽️ Full Menu' : `${CATEGORIES.find(c => c.name === selectedCategory)?.icon} ${selectedCategory}`}
+              </h2>
+              <p style={{ color: '#8a9aaa', fontSize: '0.82rem', margin: '0.25rem 0 0' }}>
+                {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} available
+              </p>
+            </div>
+            {/* Category pill filter bar (scrollable on mobile) */}
+            <div className="scrollbar-hidden" style={{
+              display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '4px',
+            }}>
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.name}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  style={{
+                    background: selectedCategory === cat.name ? cat.color : '#fff',
+                    color: selectedCategory === cat.name ? '#fff' : '#3a4a5a',
+                    border: `1.5px solid ${selectedCategory === cat.name ? cat.color : '#e0e0e0'}`,
+                    borderRadius: '999px', padding: '0.3rem 0.9rem',
+                    fontWeight: 600, fontSize: '0.75rem', cursor: 'pointer',
+                    whiteSpace: 'nowrap', transition: 'all 0.18s ease',
+                  }}
+                >
+                  {cat.icon} {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Dish Cards Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+            gap: '1.5rem',
+          }}>
+            {filteredItems.map(item => {
+              const cartItem = items.find(i => i.menu_item.id === item.id);
+              const quantity = cartItem ? cartItem.quantity : 0;
+
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    borderRadius: '16px', overflow: 'hidden', background: '#fff',
+                    border: '1px solid #f0ebe4',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                    transition: 'transform 0.18s, box-shadow 0.18s',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.transform = 'translateY(-5px)';
+                    e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.13)';
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.06)';
+                  }}
+                >
+                  {/* Image & Badges */}
+                  <div>
+                    <div style={{ position: 'relative', paddingTop: '65%', background: '#f5f0ea', overflow: 'hidden' }}>
+                      <img
+                        src={item.img}
+                        alt={item.name}
+                        loading="lazy"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
+                        onMouseOver={e => (e.currentTarget.style.transform = 'scale(1.06)')}
+                        onMouseOut={e => (e.currentTarget.style.transform = 'none')}
+                      />
+                      {/* Category chip */}
+                      <span style={{
+                        position: 'absolute', top: 10, right: 10,
+                        background: 'rgba(255,255,255,0.92)',
+                        borderRadius: '999px', padding: '2px 10px',
+                        fontSize: '0.65rem', fontWeight: 700, color: '#13253a',
+                        letterSpacing: '0.04em', backdropFilter: 'blur(4px)',
+                      }}>
+                        {item.category}
+                      </span>
+                      {item.bestseller && (
+                        <span style={{
+                          position: 'absolute', top: 10, left: 10,
+                          background: '#13253a', color: '#f0c040',
+                          borderRadius: '999px', padding: '2px 9px',
+                          fontSize: '0.63rem', fontWeight: 700, letterSpacing: '0.04em',
+                        }}>
+                          ⭐ Bestseller
+                        </span>
+                      )}
+                    </div>
+                    {/* Info */}
+                    <div style={{ padding: '1rem pb-0' }}>
+                      <div style={{ fontWeight: 700, color: '#13253a', fontSize: '0.95rem', marginBottom: '0.25rem' }}>{item.name}</div>
+                      <p style={{ fontSize: '0.75rem', color: '#7a8a9a', margin: '0 0 0.75rem', lineHeight: '1.4', height: '2.8rem', overflow: 'hidden' }}>
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Add to order / Quantity adjustments */}
+                  <div style={{ padding: '0 1rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, color: '#e53935', fontSize: '1.05rem' }}>₹{item.price}</span>
+                    
+                    {quantity === 0 ? (
+                      <button
+                        onClick={() => onlineOrderingOpen ? addItem(item) : null}
+                        disabled={!onlineOrderingOpen}
+                        style={{
+                          background: onlineOrderingOpen ? '#13253a' : '#aaa', 
+                          color: '#fff', border: 'none',
+                          borderRadius: '999px', padding: '0.4rem 1.1rem',
+                          fontSize: '0.78rem', fontWeight: 700, 
+                          cursor: onlineOrderingOpen ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.18s',
+                        }}
+                        onMouseOver={e => {
+                          if (onlineOrderingOpen) e.currentTarget.style.background = '#e53935';
+                        }}
+                        onMouseOut={e => {
+                          if (onlineOrderingOpen) e.currentTarget.style.background = '#13253a';
+                        }}
                       >
-                        <img
-                          src={menu_item.image_url}
-                          alt={menu_item.name}
-                          className="h-14 w-14 rounded-xl object-cover shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-sm text-gray-800 truncate">
-                            {menu_item.name}
-                          </h4>
-                          <span className="text-xs text-[#6F4E37] font-semibold">
-                            ₹{menu_item.price} each
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2.5 rounded-full bg-gray-50 px-2.5 py-1 border border-gray-100">
-                          <button
-                            onClick={() => updateQuantity(menu_item.id, quantity - 1)}
-                            className="text-gray-500 hover:text-[#6F4E37]"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="text-xs font-bold">{quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(menu_item.id, quantity + 1)}
-                            className="text-gray-500 hover:text-[#6F4E37]"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        {onlineOrderingOpen ? '+ Add to Order' : 'Closed'}
+                      </button>
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        background: '#f0ebe4',
+                        borderRadius: '999px',
+                        padding: '0.25rem 0.6rem',
+                        border: '1px solid rgba(19,37,58,0.1)',
+                      }}>
                         <button
-                          onClick={() => removeItem(menu_item.id)}
-                          className="text-gray-300 hover:text-red-500 transition-colors"
+                          onClick={() => updateQuantity(item.id, quantity - 1)}
+                          style={{ background: 'transparent', border: 'none', color: '#13253a', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', padding: '0 0.2rem' }}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Minus size={13} />
+                        </button>
+                        <span style={{ fontWeight: 800, fontSize: '0.8rem', color: '#13253a', minWidth: '12px', textAlign: 'center' }}>{quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, quantity + 1)}
+                          style={{ background: 'transparent', border: 'none', color: '#13253a', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', padding: '0 0.2rem' }}
+                        >
+                          <Plus size={13} />
                         </button>
                       </div>
-                    ))}
+                    )}
                   </div>
-
-                  <div className="border-t border-gray-100 p-6 bg-gray-50">
-                    <div className="flex justify-between font-bold text-sm text-gray-800 mb-6">
-                      <span>Total Amount</span>
-                      <span>₹{subtotal}</span>
-                    </div>
-
-                    <button
-                      onClick={handleCheckout}
-                      disabled={loadingCheckout}
-                      className="w-full flex items-center justify-center gap-2 rounded-full bg-[#6F4E37] hover:bg-[#5C3E2B] py-4 text-sm font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer"
-                    >
-                      {loadingCheckout ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <>
-                          <Check className="w-4 h-4" /> Secure Razorpay Checkout
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </AnimatePresence>
 
-      {/* Google login gate */}
-      <GoogleLoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onSuccess={() => {
-          setShowLoginModal(false);
-          setCartOpen(true);
-        }}
-      />
-
-      {/* Success notification */}
-      <AnimatePresence>
-        {checkoutSuccess && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-[90%] max-w-[400px] rounded-3xl bg-[#FAF6F0] p-8 text-center border border-[#6F4E37]/10 shadow-2xl"
-            >
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#6F4E37]/10 text-3xl">
-                🎉
-              </div>
-              <h3 className="mb-2 text-2xl font-bold text-[#3E2723]">Order Placed Successfully!</h3>
-              <p className="mb-4 text-xs text-[#5D4037]">
-                Your gourmet delights are being freshly prepared. Razorpay Order Reference ID:
-              </p>
-              <div className="mb-6 rounded-xl bg-white border border-[#6F4E37]/5 px-4 py-3 font-mono text-xs font-bold text-[#6F4E37] tracking-wider select-all shadow-inner">
-                {checkoutSuccess}
+          {/* Login nudge if not signed in */}
+          {!user && (
+            <div style={{
+              marginTop: '2.5rem',
+              background: 'linear-gradient(135deg, #13253a 0%, #1e3a5f 100%)',
+              borderRadius: '16px', padding: '2rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              flexWrap: 'wrap', gap: '1rem',
+              boxShadow: '0 8px 32px rgba(19,37,58,0.18)',
+            }}>
+              <div>
+                <div style={{ color: '#f0c040', fontWeight: 700, fontSize: '0.8rem', marginBottom: '0.3rem', letterSpacing: '0.06em' }}>
+                  SIGN IN TO ORDER
+                </div>
+                <div style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>
+                  Login with Google to place your order
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', marginTop: '0.25rem' }}>
+                  Quick &amp; secure · No password needed
+                </div>
               </div>
               <button
-                onClick={() => setCheckoutSuccess(null)}
-                className="w-full rounded-full bg-[#6F4E37] py-3 text-xs font-bold text-white shadow-md hover:bg-[#5C3E2B] transition-colors cursor-pointer"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                style={{
+                  background: '#fff', color: '#13253a', border: 'none',
+                  borderRadius: '12px', padding: '0.85rem 1.75rem',
+                  fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.2)', transition: 'transform 0.18s',
+                }}
+                onMouseOver={e => (e.currentTarget.style.transform = 'scale(1.03)')}
+                onMouseOut={e => (e.currentTarget.style.transform = 'none')}
               >
-                Wonderful
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.8 2.72v2.24h2.9c1.7-1.57 2.7-3.88 2.7-6.59z" />
+                  <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.2l-2.9-2.24c-.8.54-1.84.87-3.06.87-2.35 0-4.34-1.59-5.05-3.73H.95v2.3C2.43 15.89 5.5 18 9 18z" />
+                  <path fill="#FBBC05" d="M3.95 10.7c-.18-.54-.28-1.12-.28-1.7s.1-1.16.28-1.7V5H.95C.35 6.2 0 7.57 0 9s.35 2.8 1 4l2.95-2.3z" />
+                  <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.4C13.46.97 11.43 0 9 0 5.5 0 2.43 2.11.95 5.04l2.95 2.3c.71-2.14 2.7-3.76 5.05-3.76z" />
+                </svg>
+                {loading ? 'Signing in...' : 'Sign in with Google'}
               </button>
-            </motion.div>
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* ===== SHOPPING CART DRAWER OVERLAY ===== */}
+      {cartOpen && (
+        <div className="fade-in-overlay" style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1000,
+          background: 'rgba(19,37,58,0.5)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}>
+          {/* Backdrop click close */}
+          <div onClick={() => setCartOpen(false)} style={{ position: 'absolute', inset: 0 }} />
+
+          {/* Drawer Element */}
+          <div className="slide-in-drawer" style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: '420px',
+            height: '100%',
+            background: '#FAF6F0',
+            boxShadow: '-8px 0 32px rgba(19,37,58,0.22)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid rgba(19,37,58,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: '#13253a',
+              color: '#fff',
+            }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem', fontWeight: 800 }}>
+                <ShoppingCart size={20} style={{ color: '#f0c040' }} /> Your Order
+              </h3>
+              <button
+                onClick={() => setCartOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  opacity: 0.8,
+                }}
+                onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                onMouseOut={e => e.currentTarget.style.opacity = '0.8'}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Cart Items List */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+              {items.length === 0 ? (
+                <div style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#7a8a9a',
+                  textAlign: 'center',
+                  gap: '1rem',
+                }}>
+                  <span style={{ fontSize: '3rem' }}>🥐</span>
+                  <div>
+                    <h4 style={{ margin: '0 0 0.25rem', color: '#13253a', fontWeight: 700 }}>Your bag is empty</h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', maxWidth: '240px', lineHeight: '1.5' }}>
+                      Browse our premium cafe selection and add sweet delicacies!
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setCartOpen(false);
+                      document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    style={{
+                      background: '#13253a',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '999px',
+                      padding: '0.5rem 1.5rem',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      marginTop: '0.5rem',
+                    }}
+                  >
+                    Browse Menu
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {items.map(({ menu_item, quantity }) => (
+                    <div
+                      key={menu_item.id}
+                      style={{
+                        background: '#fff',
+                        borderRadius: '12px',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        gap: '0.75rem',
+                        alignItems: 'center',
+                        border: '1px solid #f0ebe4',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                      }}
+                    >
+                      <img
+                        src={menu_item.img}
+                        alt={menu_item.name}
+                        style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '8px', background: '#f5f0ea' }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: '#13253a', fontSize: '0.85rem', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {menu_item.name}
+                        </div>
+                        <div style={{ color: '#e53935', fontWeight: 700, fontSize: '0.82rem', marginTop: '0.15rem' }}>
+                          ₹{menu_item.price}
+                        </div>
+                      </div>
+
+                      {/* Quantity Controls */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        background: '#f7f4ef',
+                        borderRadius: '999px',
+                        padding: '0.2rem 0.5rem',
+                        border: '1px solid rgba(19,37,58,0.05)',
+                      }}>
+                        <button
+                          onClick={() => updateQuantity(menu_item.id, quantity - 1)}
+                          style={{ background: 'transparent', border: 'none', color: '#13253a', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                        >
+                          <Minus size={10} />
+                        </button>
+                        <span style={{ fontWeight: 800, fontSize: '0.75rem', color: '#13253a', minWidth: '10px', textAlign: 'center' }}>{quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(menu_item.id, quantity + 1)}
+                          style={{ background: 'transparent', border: 'none', color: '#13253a', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                        >
+                          <Plus size={10} />
+                        </button>
+                      </div>
+
+                      {/* Remove item */}
+                      <button
+                        onClick={() => removeItem(menu_item.id)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#c2cfd6',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        onMouseOver={e => e.currentTarget.style.color = '#e53935'}
+                        onMouseOut={e => e.currentTarget.style.color = '#c2cfd6'}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Last-minute cravings */}
+            {items.length > 0 && (
+              <div style={{ padding: '0 1.5rem 1.5rem' }}>
+                <div style={{ background: "#fff", borderRadius: "16px", padding: "16px", border: "1px solid #eaeaea", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+                    <span style={{ color: "#673ab7", fontWeight: "800", fontStyle: "italic", fontSize: "1.4rem", letterSpacing: "-1px" }}>café</span>
+                    <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "700", color: "#1A1A1A" }}>Last-minute cravings?</h3>
+                  </div>
+                  <p style={{ color: "#757575", fontSize: "0.85rem", margin: "0 0 16px" }}>Add a quick bite before you check out!</p>
+                  
+                  <div style={{ display: "flex", overflowX: "auto", gap: "12px", paddingBottom: "8px" }} className="scrollbar-hidden">
+                    {[
+                      { id: "crave_1", name: "Tiramisu", price: 69, original_price: 139, image_url: "https://images.unsplash.com/photo-1571115177098-24c42de1bd2f?q=80&w=200", weight: "1 Piece" },
+                      { id: "crave_2", name: "Plain Maggi", price: 59, original_price: 99, image_url: "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?q=80&w=200", weight: "Serves 1" },
+                      { id: "crave_3", name: "Chicken Classic Burger", price: 99, original_price: 159, image_url: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=200", weight: "200 g" }
+                    ].map(item => {
+                      const inCart = items.some(i => i.menu_item.id === item.id);
+                      return (
+                        <div key={item.id} style={{ minWidth: "135px", border: "1px solid #f0f0f0", borderRadius: "12px", padding: "8px", background: "#fff", position: "relative" }}>
+                          <Heart size={16} color="#e91e63" style={{ position: "absolute", top: "12px", right: "12px", zIndex: 2 }} />
+                          <div style={{ background: "#f8f9fa", borderRadius: "8px", height: "100px", marginBottom: "8px", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <img src={item.image_url} alt={item.name} style={{ width: "90%", height: "90%", objectFit: "cover", borderRadius: "6px" }} />
+                            <button 
+                              onClick={() => {
+                                if (!inCart) {
+                                  addItem({
+                                    id: item.id,
+                                    name: item.name,
+                                    price: item.price,
+                                    category: "Snacks",
+                                    bestseller: false,
+                                    img: item.image_url,
+                                    description: item.weight
+                                  });
+                                }
+                              }}
+                              style={{ position: "absolute", bottom: "-6px", right: "4px", background: "#fff", border: "1px solid #e91e63", color: "#e91e63", borderRadius: "8px", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", zIndex: 2 }}
+                            >
+                              {inCart ? <Check size={16} /> : <Plus size={16} strokeWidth={3} />}
+                            </button>
+                          </div>
+                          
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                            <span style={{ background: "#2E7D32", color: "#fff", padding: "2px 6px", borderRadius: "4px", fontSize: "0.8rem", fontWeight: "700" }}>₹{item.price}</span>
+                            <span style={{ textDecoration: "line-through", color: "#9e9e9e", fontSize: "0.75rem" }}>₹{item.original_price}</span>
+                          </div>
+                          <div style={{ color: "#2E7D32", fontSize: "0.7rem", fontWeight: "700", marginBottom: "6px" }}>
+                            ₹{item.original_price - item.price} OFF
+                          </div>
+                          <div style={{ fontSize: "0.85rem", fontWeight: "600", color: "#333", marginBottom: "2px", lineHeight: "1.2" }}>{item.name}</div>
+                          <div style={{ fontSize: "0.7rem", color: "#757575" }}>{item.weight}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Footer / Summary Checkout */}
+            {items.length > 0 && (
+              <div style={{
+                padding: '1.5rem',
+                background: '#fff',
+                borderTop: '1px solid rgba(19,37,58,0.08)',
+                boxShadow: '0 -4px 16px rgba(19,37,58,0.04)',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                  <span style={{ color: '#5a6a7a', fontSize: '0.85rem', fontWeight: 600 }}>Total Amount</span>
+                  <span style={{ color: '#e53935', fontSize: '1.3rem', fontWeight: 900 }}>₹{subtotal}</span>
+                </div>
+
+                {/* Ordering Closed Alert */}
+                {!onlineOrderingOpen && (
+                  <div style={{
+                    background: 'rgba(229,57,53,0.08)',
+                    border: '1px solid rgba(229,57,53,0.2)',
+                    borderRadius: '8px',
+                    padding: '0.65rem',
+                    color: '#e53935',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                    marginBottom: '1rem',
+                    lineHeight: '1.4',
+                  }}>
+                    Online ordering is closed right now. Please call us or visit our cafe.
+                  </div>
+                )}
+
+                <button
+                  onClick={handleCheckout}
+                  disabled={placingOrder || !onlineOrderingOpen}
+                  style={{
+                    width: '100%',
+                    background: onlineOrderingOpen ? '#13253a' : '#aaa',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '0.9rem 0',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    cursor: onlineOrderingOpen ? (placingOrder ? 'not-allowed' : 'pointer') : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 12px rgba(19,37,58,0.18)',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseOver={e => { if (!placingOrder && onlineOrderingOpen) e.currentTarget.style.background = '#e53935'; }}
+                  onMouseOut={e => { if (!placingOrder && onlineOrderingOpen) e.currentTarget.style.background = '#13253a'; }}
+                >
+                  {placingOrder ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Creating Order...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check size={16} />
+                      <span>{onlineOrderingOpen ? 'Proceed to Checkout' : 'Ordering Closed'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+
+      {/* ===== ADMIN SETTINGS DRAWER OVERLAY ===== */}
+      {adminOpen && (
+        <div className="fade-in-overlay" style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1100,
+          background: 'rgba(19,37,58,0.5)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}>
+          {/* Backdrop click close */}
+          <div onClick={() => setAdminOpen(false)} style={{ position: 'absolute', inset: 0 }} />
+
+          {/* Drawer Element */}
+          <div className="slide-in-drawer" style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: '380px',
+            height: '100%',
+            background: '#FAF6F0',
+            boxShadow: '-8px 0 32px rgba(19,37,58,0.22)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid rgba(19,37,58,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: '#13253a',
+              color: '#fff',
+            }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem', fontWeight: 800 }}>
+                ⚙️ Admin Settings
+              </h3>
+              <button
+                onClick={() => setAdminOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  opacity: 0.8,
+                }}
+                onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                onMouseOut={e => e.currentTarget.style.opacity = '0.8'}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ flex: 1, padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div style={{
+                background: '#fff',
+                borderRadius: '16px',
+                padding: '1.25rem',
+                border: '1px solid #f0ebe4',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+              }}>
+                <h4 style={{ margin: '0 0 0.5rem', color: '#13253a', fontWeight: 800, fontSize: '0.92rem' }}>
+                  Store Operations
+                </h4>
+                <p style={{ margin: '0 0 1.25rem', fontSize: '0.75rem', color: '#7a8a9a', lineHeight: '1.4' }}>
+                  Enable or disable online ordering. Toggling this off will immediately block customers from placing orders and disable checking out.
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#f7f4ef',
+                  borderRadius: '12px',
+                  padding: '0.85rem 1rem',
+                  border: '1px solid rgba(0,0,0,0.04)',
+                }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.82rem', color: '#13253a' }}>
+                    Online Ordering
+                  </span>
+                  
+                  <button
+                    onClick={() => handleToggleOrdering(!onlineOrderingOpen)}
+                    disabled={updatingConfig}
+                    style={{
+                      background: onlineOrderingOpen ? '#2e7d32' : '#c62828',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.4rem 1rem',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      cursor: updatingConfig ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {updatingConfig ? '...' : (onlineOrderingOpen ? 'ON (Accepting)' : 'OFF (Closed)')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== SUCCESS NOTIFICATION MODAL ===== */}
+      {checkoutSuccess && (
+        <div className="fade-in-overlay" style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 2000,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <div style={{
+            width: '90%',
+            maxWidth: '380px',
+            background: '#FAF6F0',
+            borderRadius: '24px',
+            padding: '2rem',
+            textAlign: 'center',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
+            border: '1px solid rgba(111,78,55,0.1)',
+            animation: 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: '#e8f5e9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.8rem',
+              margin: '0 auto 1.25rem',
+              color: '#2e7d32',
+              boxShadow: '0 4px 10px rgba(76,175,80,0.2)',
+            }}>
+              🎉
+            </div>
+            
+            <h3 style={{ margin: '0 0 0.5rem', color: '#13253a', fontSize: '1.25rem', fontWeight: 800 }}>
+              Order Placed Successfully!
+            </h3>
+            
+            <p style={{ margin: '0 0 1rem', fontSize: '0.8rem', color: '#7a8a9a', lineHeight: '1.5' }}>
+              Your gourmet delights are being freshly prepared at Vaakki Cafe. Here is your Order Reference ID:
+            </p>
+
+            <div style={{
+              background: '#fff',
+              border: '1px dashed #13253a30',
+              borderRadius: '10px',
+              padding: '0.5rem 1rem',
+              fontWeight: 800,
+              fontSize: '0.9rem',
+              color: '#e53935',
+              letterSpacing: '0.05em',
+              marginBottom: '1.5rem',
+              fontFamily: 'monospace',
+              display: 'inline-block',
+            }}>
+              {checkoutSuccess}
+            </div>
+
+            <button
+              onClick={() => setCheckoutSuccess(null)}
+              style={{
+                width: '100%',
+                background: '#13253a',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '0.75rem 0',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+              }}
+              onMouseOver={e => e.currentTarget.style.background = '#e53935'}
+              onMouseOut={e => e.currentTarget.style.background = '#13253a'}
+            >
+              Wonderful, Thank You!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== FOOTER ===== */}
+      <footer style={{
+        background: '#13253a', color: 'rgba(255,255,255,0.6)',
+        textAlign: 'center', padding: '1.5rem 2rem',
+        fontSize: '0.82rem', marginTop: '2rem',
+      }}>
+        © 2026 Vaakki Cafe · Near ECR, Mahabalipuram, Tamil Nadu
+      </footer>
 
       <InstallCafeAppButton />
     </div>
   );
-};
+}
 
-// Main root component
+// Wrapper to inject CartProvider
 export default function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <LeeVaakkiCafeApp />
-      </CartProvider>
-    </AuthProvider>
+    <CartProvider>
+      <LeeVaakkiCafeApp />
+    </CartProvider>
   );
 }
