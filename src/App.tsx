@@ -13,8 +13,12 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'cafe_4', name: 'Cold Brew Float',        price: 210, category: 'Coffee',   bestseller: false, img: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=600', description: 'Slow-steeped cold brew topped with premium vanilla ice cream.' },
   { id: 'cafe_5', name: 'Matcha Green Tea Latte', price: 240, category: 'Tea',      bestseller: false, img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=600', description: 'Pure ceremonial Japanese matcha whisked with creamy steamed milk.' },
   { id: 'cafe_6', name: 'Spiced Masala Chai',     price: 90,  category: 'Tea',      bestseller: true,  img: 'https://images.unsplash.com/photo-1561336313-0bd5e0b27ec8?q=80&w=600', description: 'Traditional Indian tea brewed with aromatic whole spices and fresh milk.' },
-  { id: 'cafe_7', name: 'Margherita Pizza',       price: 320, category: 'Pizza',    bestseller: true,  img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600', description: 'San Marzano tomatoes, fresh mozzarella, sweet basil, and olive oil.' },
-  { id: 'cafe_8', name: 'Pesto Veggie Pizza',     price: 370, category: 'Pizza',    bestseller: false, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600', description: 'Herby basil pesto, bell peppers, olives, mushrooms, and mozzarella.' },
+  { id: 'pizza_margherita_s', name: 'Margherita Pizza (S)', price: 249, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600', description: 'San Marzano tomatoes, fresh mozzarella, sweet basil, and olive oil.' },
+  { id: 'pizza_margherita_m', name: 'Margherita Pizza (M)', price: 320, category: 'Pizza', bestseller: true,  img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600', description: 'San Marzano tomatoes, fresh mozzarella, sweet basil, and olive oil.' },
+  { id: 'pizza_margherita_l', name: 'Margherita Pizza (L)', price: 420, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600', description: 'San Marzano tomatoes, fresh mozzarella, sweet basil, and olive oil.' },
+  { id: 'pizza_pesto_s', name: 'Pesto Veggie Pizza (S)', price: 299, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600', description: 'Herby basil pesto, bell peppers, olives, mushrooms, and mozzarella.' },
+  { id: 'pizza_pesto_m', name: 'Pesto Veggie Pizza (M)', price: 370, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600', description: 'Herby basil pesto, bell peppers, olives, mushrooms, and mozzarella.' },
+  { id: 'pizza_pesto_l', name: 'Pesto Veggie Pizza (L)', price: 470, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600', description: 'Herby basil pesto, bell peppers, olives, mushrooms, and mozzarella.' },
   { id: 'cafe_9', name: 'Classic Beef Burger',    price: 280, category: 'Burger',   bestseller: true,  img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600', description: 'Juicy flame-grilled beef patty, cheddar, lettuce, tomato, and house sauce.' },
   { id: 'cafe_10', name: 'Crispy Chicken Burger',  price: 260, category: 'Burger',   bestseller: false, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=600', description: 'Golden crispy chicken breast, spicy mayo, and pickles on a toasted bun.' },
   { id: 'cafe_11', name: 'Artisan Butter Croissant', price: 130, category: 'Breads', bestseller: true,  img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600', description: 'Flaky, multi-layered French pastry baked fresh with pure premium butter.' },
@@ -23,6 +27,13 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'cafe_14', name: 'Belgian Waffle',         price: 220, category: 'Desserts', bestseller: false, img: 'https://images.unsplash.com/photo-1598214886806-c9d5d96e1c6d?q=80&w=600', description: 'Warm, fluffy waffle served with pure maple syrup and fresh whipped cream.' },
   { id: 'cafe_15', name: 'Veg Club Sandwich',      price: 180, category: 'Snacks',   bestseller: false, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?q=80&w=600', description: 'Double-decker sandwich loaded with crisp veggies, cheese, and herb spread.' },
   { id: 'cafe_16', name: 'Meal for Two',           price: 380, category: 'Combo',    bestseller: false, img: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600', description: 'Perfect café combo: Choose any 2 coffees, 1 pizza, and 1 pastry.' },
+];
+
+const PIZZA_TOPPINGS = [
+  { id: "topping_capsicum", name: "Capsicum", price: 39 },
+  { id: "topping_extra_cheese", name: "Extra Cheese", price: 59 },
+  { id: "topping_black_olives", name: "Black Olives", price: 49 },
+  { id: "topping_jalapenos", name: "Jalapenos", price: 49 },
 ];
 
 // ---- Backend Configuration ----
@@ -1066,56 +1077,45 @@ function LeeVaakkiCafeApp() {
             </div>
 
             {/* Last-minute cravings */}
-            {items.length > 0 && (
+            {items.some(i => i.menu_item.category === 'Pizza') && (
               <div style={{ padding: '0 1.5rem 1.5rem' }}>
                 <div style={{ background: "#fff", borderRadius: "16px", padding: "16px", border: "1px solid #eaeaea", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
                     <span style={{ color: "#673ab7", fontWeight: "800", fontStyle: "italic", fontSize: "1.4rem", letterSpacing: "-1px" }}>café</span>
                     <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "700", color: "#1A1A1A" }}>Last-minute cravings?</h3>
                   </div>
-                  <p style={{ color: "#757575", fontSize: "0.85rem", margin: "0 0 16px" }}>Add a quick bite before you check out!</p>
+                  <p style={{ color: "#757575", fontSize: "0.85rem", margin: "0 0 16px" }}>Add extra toppings to your pizza!</p>
                   
                   <div style={{ display: "flex", overflowX: "auto", gap: "12px", paddingBottom: "8px" }} className="scrollbar-hidden">
-                    {[
-                      { id: "crave_1", name: "Tiramisu", price: 69, original_price: 139, image_url: "https://images.unsplash.com/photo-1571115177098-24c42de1bd2f?q=80&w=200", weight: "1 Piece" },
-                      { id: "crave_2", name: "Plain Maggi", price: 59, original_price: 99, image_url: "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?q=80&w=200", weight: "Serves 1" },
-                      { id: "crave_3", name: "Chicken Classic Burger", price: 99, original_price: 159, image_url: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=200", weight: "200 g" }
-                    ].map(item => {
-                      const inCart = items.some(i => i.menu_item.id === item.id);
+                    {PIZZA_TOPPINGS.map(top => {
+                      const inCart = items.some(i => i.menu_item.id === top.id);
                       return (
-                        <div key={item.id} style={{ minWidth: "135px", border: "1px solid #f0f0f0", borderRadius: "12px", padding: "8px", background: "#fff", position: "relative" }}>
+                        <div key={top.id} style={{ minWidth: "135px", border: "1px solid #f0f0f0", borderRadius: "12px", padding: "12px", background: "#fff", position: "relative", boxShadow: "0 2px 6px rgba(0,0,0,0.04)" }}>
                           <Heart size={16} color="#e91e63" style={{ position: "absolute", top: "12px", right: "12px", zIndex: 2 }} />
-                          <div style={{ background: "#f8f9fa", borderRadius: "8px", height: "100px", marginBottom: "8px", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <img src={item.image_url} alt={item.name} style={{ width: "90%", height: "90%", objectFit: "cover", borderRadius: "6px" }} />
+                          <div style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: "8px", color: "#1A1A1A", paddingRight: "20px" }}>
+                            {top.name}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px" }}>
+                            <span style={{ color: "#2E7D32", fontWeight: "800", fontSize: "0.95rem" }}>₹{top.price}</span>
                             <button 
                               onClick={() => {
                                 if (!inCart) {
                                   addItem({
-                                    id: item.id,
-                                    name: item.name,
-                                    price: item.price,
-                                    category: "Snacks",
+                                    id: top.id,
+                                    name: `${top.name} (Topping)`,
+                                    price: top.price,
+                                    category: "Topping",
                                     bestseller: false,
-                                    img: item.image_url,
-                                    description: item.weight
+                                    img: "https://images.unsplash.com/photo-1590080838960-ebcb9a8c17b5?q=80&w=200", // Generic toppings image
+                                    description: "Extra pizza topping"
                                   });
                                 }
                               }}
-                              style={{ position: "absolute", bottom: "-6px", right: "4px", background: "#fff", border: "1px solid #e91e63", color: "#e91e63", borderRadius: "8px", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", zIndex: 2 }}
+                              style={{ background: inCart ? "#4CAF50" : "#fff", border: inCart ? "none" : "1px solid #e91e63", color: inCart ? "#fff" : "#e91e63", borderRadius: "8px", width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2 }}
                             >
                               {inCart ? <Check size={16} /> : <Plus size={16} strokeWidth={3} />}
                             </button>
                           </div>
-                          
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                            <span style={{ background: "#2E7D32", color: "#fff", padding: "2px 6px", borderRadius: "4px", fontSize: "0.8rem", fontWeight: "700" }}>₹{item.price}</span>
-                            <span style={{ textDecoration: "line-through", color: "#9e9e9e", fontSize: "0.75rem" }}>₹{item.original_price}</span>
-                          </div>
-                          <div style={{ color: "#2E7D32", fontSize: "0.7rem", fontWeight: "700", marginBottom: "6px" }}>
-                            ₹{item.original_price - item.price} OFF
-                          </div>
-                          <div style={{ fontSize: "0.85rem", fontWeight: "600", color: "#333", marginBottom: "2px", lineHeight: "1.2" }}>{item.name}</div>
-                          <div style={{ fontSize: "0.7rem", color: "#757575" }}>{item.weight}</div>
                         </div>
                       );
                     })}
