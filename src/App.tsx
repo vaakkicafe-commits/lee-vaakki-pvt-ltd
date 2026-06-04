@@ -13,12 +13,34 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'cafe_4', name: 'Cold Brew Float',        price: 210, category: 'Coffee',   bestseller: false, img: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=600', description: 'Slow-steeped cold brew topped with premium vanilla ice cream.' },
   { id: 'cafe_5', name: 'Matcha Green Tea Latte', price: 240, category: 'Tea',      bestseller: false, img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=600', description: 'Pure ceremonial Japanese matcha whisked with creamy steamed milk.' },
   { id: 'cafe_6', name: 'Spiced Masala Chai',     price: 90,  category: 'Tea',      bestseller: true,  img: 'https://images.unsplash.com/photo-1561336313-0bd5e0b27ec8?q=80&w=600', description: 'Traditional Indian tea brewed with aromatic whole spices and fresh milk.' },
-  { id: 'pizza_margherita_s', name: 'Margherita Pizza (S)', price: 249, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600', description: 'San Marzano tomatoes, fresh mozzarella, sweet basil, and olive oil.' },
-  { id: 'pizza_margherita_m', name: 'Margherita Pizza (M)', price: 320, category: 'Pizza', bestseller: true,  img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600', description: 'San Marzano tomatoes, fresh mozzarella, sweet basil, and olive oil.' },
-  { id: 'pizza_margherita_l', name: 'Margherita Pizza (L)', price: 420, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600', description: 'San Marzano tomatoes, fresh mozzarella, sweet basil, and olive oil.' },
-  { id: 'pizza_pesto_s', name: 'Pesto Veggie Pizza (S)', price: 299, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600', description: 'Herby basil pesto, bell peppers, olives, mushrooms, and mozzarella.' },
-  { id: 'pizza_pesto_m', name: 'Pesto Veggie Pizza (M)', price: 370, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600', description: 'Herby basil pesto, bell peppers, olives, mushrooms, and mozzarella.' },
-  { id: 'pizza_pesto_l', name: 'Pesto Veggie Pizza (L)', price: 470, category: 'Pizza', bestseller: false, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600', description: 'Herby basil pesto, bell peppers, olives, mushrooms, and mozzarella.' },
+  { 
+    id: 'cafe_7', 
+    name: 'Margherita Pizza',       
+    price: 320, 
+    category: 'Pizza',    
+    bestseller: true,  
+    img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=600', 
+    description: 'San Marzano tomatoes, fresh mozzarella, sweet basil, and olive oil.',
+    variants: [
+      { size: 'S', price: 249, idSuffix: '_s' },
+      { size: 'M', price: 320, idSuffix: '_m' },
+      { size: 'L', price: 420, idSuffix: '_l' }
+    ]
+  },
+  { 
+    id: 'cafe_8', 
+    name: 'Pesto Veggie Pizza',     
+    price: 370, 
+    category: 'Pizza',    
+    bestseller: false, 
+    img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600', 
+    description: 'Herby basil pesto, bell peppers, olives, mushrooms, and mozzarella.',
+    variants: [
+      { size: 'S', price: 299, idSuffix: '_s' },
+      { size: 'M', price: 370, idSuffix: '_m' },
+      { size: 'L', price: 470, idSuffix: '_l' }
+    ]
+  },
   { id: 'cafe_9', name: 'Classic Beef Burger',    price: 280, category: 'Burger',   bestseller: true,  img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600', description: 'Juicy flame-grilled beef patty, cheddar, lettuce, tomato, and house sauce.' },
   { id: 'cafe_10', name: 'Crispy Chicken Burger',  price: 260, category: 'Burger',   bestseller: false, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=600', description: 'Golden crispy chicken breast, spicy mayo, and pickles on a toasted bun.' },
   { id: 'cafe_11', name: 'Artisan Butter Croissant', price: 130, category: 'Breads', bestseller: true,  img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600', description: 'Flaky, multi-layered French pastry baked fresh with pure premium butter.' },
@@ -73,6 +95,7 @@ function LeeVaakkiCafeApp() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [updatingConfig, setUpdatingConfig] = useState(false);
+  const [selectedItemForOptions, setSelectedItemForOptions] = useState<MenuItem | null>(null);
 
   // Cart operations from context
   const { items, addItem, updateQuantity, removeItem, clearCart, itemCount, subtotal } = useCart();
@@ -300,6 +323,10 @@ function LeeVaakkiCafeApp() {
         @keyframes slideIn {
           from { transform: translateX(100%); }
           to { transform: translateX(0); }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -733,8 +760,7 @@ function LeeVaakkiCafeApp() {
             gap: '1.5rem',
           }}>
             {filteredItems.map(item => {
-              const cartItem = items.find(i => i.menu_item.id === item.id);
-              const quantity = cartItem ? cartItem.quantity : 0;
+              const itemQuantity = items.filter(i => i.menu_item.id.startsWith(item.id)).reduce((sum, i) => sum + i.quantity, 0);
 
               return (
                 <div
@@ -802,28 +828,7 @@ function LeeVaakkiCafeApp() {
                   <div style={{ padding: '0 1rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: 800, color: '#e53935', fontSize: '1.05rem' }}>₹{item.price}</span>
                     
-                    {quantity === 0 ? (
-                      <button
-                        onClick={() => onlineOrderingOpen ? addItem(item) : null}
-                        disabled={!onlineOrderingOpen}
-                        style={{
-                          background: onlineOrderingOpen ? '#13253a' : '#aaa', 
-                          color: '#fff', border: 'none',
-                          borderRadius: '999px', padding: '0.4rem 1.1rem',
-                          fontSize: '0.78rem', fontWeight: 700, 
-                          cursor: onlineOrderingOpen ? 'pointer' : 'not-allowed',
-                          transition: 'all 0.18s',
-                        }}
-                        onMouseOver={e => {
-                          if (onlineOrderingOpen) e.currentTarget.style.background = '#e53935';
-                        }}
-                        onMouseOut={e => {
-                          if (onlineOrderingOpen) e.currentTarget.style.background = '#13253a';
-                        }}
-                      >
-                        {onlineOrderingOpen ? '+ Add to Order' : 'Closed'}
-                      </button>
-                    ) : (
+                    {(!item.variants && itemQuantity > 0) ? (
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -834,19 +839,47 @@ function LeeVaakkiCafeApp() {
                         border: '1px solid rgba(19,37,58,0.1)',
                       }}>
                         <button
-                          onClick={() => updateQuantity(item.id, quantity - 1)}
-                          style={{ background: 'transparent', border: 'none', color: '#13253a', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', padding: '0 0.2rem' }}
+                          onClick={() => updateQuantity(item.id, itemQuantity - 1)}
+                          style={{ background: 'transparent', border: 'none', color: '#13253a', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
                         >
-                          <Minus size={13} />
+                          <Minus size={12} />
                         </button>
-                        <span style={{ fontWeight: 800, fontSize: '0.8rem', color: '#13253a', minWidth: '12px', textAlign: 'center' }}>{quantity}</span>
+                        <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#13253a', minWidth: '12px', textAlign: 'center' }}>{itemQuantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.id, quantity + 1)}
-                          style={{ background: 'transparent', border: 'none', color: '#13253a', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', padding: '0 0.2rem' }}
+                          onClick={() => updateQuantity(item.id, itemQuantity + 1)}
+                          style={{ background: 'transparent', border: 'none', color: '#13253a', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
                         >
-                          <Plus size={13} />
+                          <Plus size={12} />
                         </button>
                       </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (!onlineOrderingOpen) return;
+                          if (item.variants) {
+                            setSelectedItemForOptions(item);
+                          } else {
+                            addItem(item);
+                          }
+                        }}
+                        disabled={!onlineOrderingOpen}
+                        style={{
+                          background: onlineOrderingOpen ? (itemQuantity > 0 ? '#4CAF50' : '#13253a') : '#aaa', 
+                          color: '#fff', border: 'none',
+                          borderRadius: '999px', padding: '0.4rem 1.1rem',
+                          fontSize: '0.78rem', fontWeight: 700, 
+                          cursor: onlineOrderingOpen ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.18s',
+                        }}
+                        onMouseOver={e => {
+                          if (onlineOrderingOpen && itemQuantity === 0) e.currentTarget.style.background = '#e53935';
+                        }}
+                        onMouseOut={e => {
+                          if (onlineOrderingOpen && itemQuantity === 0) e.currentTarget.style.background = '#13253a';
+                        }}
+                      >
+                        {onlineOrderingOpen ? (item.variants ? 'Customize' : '+ Add to Order') : 'Closed'}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -900,6 +933,65 @@ function LeeVaakkiCafeApp() {
           )}
         </section>
       </main>
+
+      {/* ===== OPTIONS MODAL ===== */}
+      {selectedItemForOptions && selectedItemForOptions.variants && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '1rem'
+        }} onClick={() => setSelectedItemForOptions(null)}>
+          <div style={{
+            background: '#fff', borderRadius: '20px', width: '100%', maxWidth: '360px', overflow: 'hidden',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'slideUp 0.2s ease-out'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ position: 'relative', height: '140px' }}>
+              <img src={selectedItemForOptions.img} alt={selectedItemForOptions.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button 
+                onClick={() => setSelectedItemForOptions(null)}
+                style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+              >
+                <X size={18} color="#1A1A1A" />
+              </button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <h2 style={{ margin: '0 0 4px', fontSize: '1.2rem', fontWeight: 800, color: '#13253a' }}>{selectedItemForOptions.name}</h2>
+              <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: '#7a8a9a', lineHeight: '1.4' }}>Choose your size to proceed.</p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {selectedItemForOptions.variants.map((variant, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 16px', borderRadius: '12px', border: '1px solid #eaeaea',
+                    background: '#f8f9fa'
+                  }}>
+                    <span style={{ fontWeight: 700, color: '#1A1A1A', fontSize: '0.95rem' }}>Size: {variant.size}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontWeight: 800, color: '#e53935' }}>₹{variant.price}</span>
+                      <button
+                        onClick={() => {
+                          addItem({
+                            ...selectedItemForOptions,
+                            id: selectedItemForOptions.id + variant.idSuffix,
+                            name: `${selectedItemForOptions.name} (${variant.size})`,
+                            price: variant.price
+                          });
+                          setSelectedItemForOptions(null);
+                        }}
+                        style={{
+                          background: '#13253a', color: '#fff', border: 'none', borderRadius: '8px',
+                          padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer'
+                        }}
+                      >
+                        ADD
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== SHOPPING CART DRAWER OVERLAY ===== */}
       {cartOpen && (
