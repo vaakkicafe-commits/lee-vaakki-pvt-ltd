@@ -613,22 +613,70 @@ function LeeVaakkiCafeApp() {
 
         {/* ===== ONLINE ORDERING SPLASH ===== */}
         <section style={{ background: "#fdfcfa", padding: "4rem 2rem", borderTop: "1px solid #f0ebe4" }}>
-          <div style={{ textAlign: "center" }}>
+          <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
             <span style={{ color: "#e53935", fontWeight: "700", fontSize: "14px", letterSpacing: "1px", textTransform: "uppercase" }}>ONLINE ORDERING</span>
             <h2 style={{ fontSize: "28px", fontWeight: "800", color: "#1A1A1A", marginTop: "8px", marginBottom: "8px" }}>How would you like to order today?</h2>
-            <p style={{ color: "#666", fontSize: "15px", maxWidth: "600px", margin: "0 auto", marginBottom: "2rem" }}>
+            <p style={{ color: "#666", fontSize: "15px", maxWidth: "600px", margin: "0 auto 2.5rem" }}>
               Craving our signature Napoleon pizza or house cappuccino? Order directly from the café for the best value and special offers!
             </p>
-            
-            <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: "12px", padding: "1.5rem", display: "inline-block", textAlign: "left" }}>
-              <span style={{ fontSize: "13px", fontWeight: "600", color: "#888", textTransform: "uppercase", letterSpacing: "0.5px" }}>Soon you can also order from:</span>
-              <div style={{ display: "flex", gap: "1rem", marginTop: "1rem", alignItems: "center" }}>
-                <span style={{ fontWeight: "600", color: "#1A1A1A" }}>Swiggy</span>
-                <span style={{ color: "#ccc" }}>•</span>
-                <span style={{ fontWeight: "600", color: "#1A1A1A" }}>Zomato</span>
-                <span style={{ color: "#ccc" }}>•</span>
-                <span style={{ fontWeight: "600", color: "#1A1A1A" }}>Dining partners</span>
+
+            {/* Order Channel Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.25rem", textAlign: "left" }}>
+
+              {/* Direct Order Card */}
+              <div style={{ background: "#13253a", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 8px 24px rgba(19,37,58,0.18)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{ background: "#f0c040", borderRadius: "8px", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>☕</div>
+                <div>
+                  <div style={{ color: "#f0c040", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px" }}>Best Value</div>
+                  <div style={{ color: "#fff", fontWeight: 800, fontSize: "1.05rem", marginBottom: "4px" }}>Order Directly</div>
+                  <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem", lineHeight: 1.5 }}>No commission, best prices & special offers only for direct orders.</div>
+                </div>
+                <button
+                  onClick={() => document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  style={{ marginTop: "auto", background: "#e53935", color: "#fff", border: "none", borderRadius: "999px", padding: "0.6rem 1.25rem", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", width: "fit-content", transition: "background 0.2s" }}
+                  onMouseOver={e => e.currentTarget.style.background = "#c62828"}
+                  onMouseOut={e => e.currentTarget.style.background = "#e53935"}
+                >
+                  Order Now →
+                </button>
               </div>
+
+              {/* Swiggy Card */}
+              <div style={{ background: "#fff", border: "1px solid #f0ebe4", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{ background: "#fff3e0", borderRadius: "8px", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>🧡</div>
+                <div>
+                  <div style={{ color: "#ff5722", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px" }}>Coming Soon</div>
+                  <div style={{ color: "#1A1A1A", fontWeight: 800, fontSize: "1.05rem", marginBottom: "4px" }}>Swiggy</div>
+                  <div style={{ color: "#888", fontSize: "0.8rem", lineHeight: 1.5 }}>We're getting listed on Swiggy. Stay tuned for fast delivery to your doorstep!</div>
+                </div>
+                <a
+                  href="https://www.swiggy.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ marginTop: "auto", background: "#f0f0f0", color: "#888", border: "1px solid #e0e0e0", borderRadius: "999px", padding: "0.6rem 1.25rem", fontWeight: 700, fontSize: "0.85rem", cursor: "default", width: "fit-content", textDecoration: "none", pointerEvents: "none", opacity: 0.6 }}
+                >
+                  Coming Soon
+                </a>
+              </div>
+
+              {/* Zomato Card */}
+              <div style={{ background: "#fff", border: "1px solid #f0ebe4", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{ background: "#fce4ec", borderRadius: "8px", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>❤️</div>
+                <div>
+                  <div style={{ color: "#e53935", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "4px" }}>Coming Soon</div>
+                  <div style={{ color: "#1A1A1A", fontWeight: 800, fontSize: "1.05rem", marginBottom: "4px" }}>Zomato</div>
+                  <div style={{ color: "#888", fontSize: "0.8rem", lineHeight: 1.5 }}>We'll be on Zomato soon. Track our page for launch offers and exclusive deals!</div>
+                </div>
+                <a
+                  href="https://www.zomato.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ marginTop: "auto", background: "#f0f0f0", color: "#888", border: "1px solid #e0e0e0", borderRadius: "999px", padding: "0.6rem 1.25rem", fontWeight: 700, fontSize: "0.85rem", cursor: "default", width: "fit-content", textDecoration: "none", pointerEvents: "none", opacity: 0.6 }}
+                >
+                  Coming Soon
+                </a>
+              </div>
+
             </div>
           </div>
         </section>
