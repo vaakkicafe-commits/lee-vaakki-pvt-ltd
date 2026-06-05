@@ -26,7 +26,7 @@ const UNITS = [
     gradient: 'linear-gradient(135deg, #7b1818 0%, #c0392b 100%)',
     accent: '#f39c12',
     tag: 'DINE IN · TAKEAWAY',
-    route: '/dhaba',
+    route: 'https://leevaakkidhaba.com',
     live: true,
     liveLabel: 'Now Serving',
   },
@@ -158,7 +158,7 @@ export default function LandingPage() {
           {UNITS.map(u => (
             <button
               key={u.id}
-              onClick={() => navigate(u.route)}
+              onClick={() => u.route.startsWith('http') ? window.location.href = u.route : navigate(u.route)}
               style={{
                 background: 'transparent',
                 border: '1px solid rgba(255,255,255,0.1)',
@@ -350,7 +350,7 @@ export default function LandingPage() {
             <div
               key={unit.id}
               className="unit-card"
-              onClick={() => navigate(unit.route)}
+              onClick={() => unit.route.startsWith('http') ? window.location.href = unit.route : navigate(unit.route)}
               onMouseEnter={() => setHoveredUnit(unit.id)}
               onMouseLeave={() => setHoveredUnit(null)}
               style={{
@@ -468,7 +468,7 @@ export default function LandingPage() {
           {UNITS.map(u => (
             <button
               key={u.id}
-              onClick={() => navigate(u.route)}
+              onClick={() => u.route.startsWith('http') ? window.location.href = u.route : navigate(u.route)}
               style={{
                 background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '6px', padding: '0.3rem 0.85rem',
