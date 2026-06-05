@@ -11,6 +11,8 @@ export function InstallCafeAppButton() {
     const hostname = window.location.hostname;
     const isAllowedDomain = 
       hostname.includes('leevaakkicafe') || 
+      hostname.includes('leevaakki.com') ||
+      hostname.includes('vercel.app') ||
       hostname.includes('localhost') || 
       hostname.includes('127.0.0.1');
 
