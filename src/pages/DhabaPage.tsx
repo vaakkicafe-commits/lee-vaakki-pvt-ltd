@@ -61,7 +61,7 @@ const LOCATIONS = {
       swiggyLink: null,  // coming soon
       zomatoLink: null,  // coming soon
       mapLink: 'https://maps.app.goo.gl/qx8JhX2z6xJLmMDA6',
-      navigateTo: '/dhaba',  // internal route — stays on DhabaPage
+      navigateTo: 'https://leevaakkidhaba.com',  // external route — opens Dhaba site
     }
   ],
   cloud: [
