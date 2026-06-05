@@ -60,7 +60,7 @@ const LOCATIONS = {
       orderDirectUrl: 'https://leevaakkidhaba.com',
       swiggyLink: null,  // coming soon
       zomatoLink: null,  // coming soon
-      mapLink: 'https://maps.google.com/?q=Lee+Vaakki+Dhaba+OMR'
+      mapLink: 'https://maps.app.goo.gl/qx8JhX2z6xJLmMDA6'
     }
   ],
   cloud: [
