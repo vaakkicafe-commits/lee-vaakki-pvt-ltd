@@ -30,4 +30,12 @@ if (isAllowedDomain && 'serviceWorker' in navigator) {
         console.error('[SW] Cafe service worker registration failed:', err);
       });
   });
+} else if ('serviceWorker' in navigator) {
+  // Unregister service workers on non-cafe domains to prevent old apps from being cached
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(let registration of registrations) {
+      registration.unregister();
+      console.log('[SW] Unregistered stale service worker');
+    }
+  });
 }

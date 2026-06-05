@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 import { InstallCafeAppButton } from './components/InstallCafeAppButton';
@@ -1574,20 +1574,36 @@ function CafeRoute() {
   );
 }
 
+// Domain-based routing component
+function DomainRouter() {
+  const hostname = window.location.hostname;
+  
+  if (hostname === 'leevaakkicafe.com' || hostname === 'www.leevaakkicafe.com') {
+    return <Navigate to="/cafe" replace />;
+  }
+  
+  if (hostname === 'leevaakkidhaba.com' || hostname === 'www.leevaakkidhaba.com') {
+    return <Navigate to="/dhaba" replace />;
+  }
+
+  // Fallback to corporate landing page
+  return <LandingPage />;
+}
+
 // Root app with full routing
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<DomainRouter />} />
         <Route path="/cafe" element={<CafeRoute />} />
         <Route path="/dhaba" element={<DhabaPage />} />
         <Route path="/dhaba/cloud/mahabalipuram" element={<DhabaAdminPage />} />
         <Route path="/farm" element={<FarmPage />} />
         <Route path="/lvtech" element={<LvTechPage />} />
         <Route path="/marine" element={<MarinePage />} />
-        {/* Fallback — redirect unknown paths to landing */}
-        <Route path="*" element={<LandingPage />} />
+        {/* Fallback — redirect unknown paths to domain router */}
+        <Route path="*" element={<DomainRouter />} />
       </Routes>
     </BrowserRouter>
   );

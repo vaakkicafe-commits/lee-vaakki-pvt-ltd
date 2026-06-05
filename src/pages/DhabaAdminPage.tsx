@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
+
+// ---- Backend Configuration ----
+const BACKEND_URL = (import.meta as any).env?.VITE_BACKEND_URL || '';
+const API = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
 
 interface UserProfile {
   name: string;
@@ -151,6 +155,23 @@ function AdminDashboard({ onClose, onLogout }: { onClose: () => void; onLogout: 
   );
 }
 
+// ===== Check admin role via backend =====
+async function checkDhabaAdminStatus(idToken: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${idToken}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const dhabaRole = data.roles?.dhaba;
+      return dhabaRole === 'admin' || dhabaRole === 'employee';
+    }
+  } catch (e) {
+    console.error('Failed to check dhaba admin status:', e);
+  }
+  return false;
+}
+
 // ===== MAIN PAGE =====
 export default function DhabaAdminPage() {
   const [activeCategory, setActiveCategory] = useState('Dal & Curries');
@@ -161,15 +182,40 @@ export default function DhabaAdminPage() {
 
   const activeGroup = DHABA_MENU.find(g => g.category === activeCategory)!;
 
+  // Restore session & check admin role on mount
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          setUser({
+            name: firebaseUser.displayName || 'Staff',
+            photoURL: firebaseUser.photoURL,
+          });
+          const admin = await checkDhabaAdminStatus(idToken);
+          setIsAdmin(admin);
+        } catch (e) {
+          console.error('Failed to restore session:', e);
+        }
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleGoogleLogin = async () => {
     try {
       setLoginLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
       setUser({
         name: result.user.displayName || 'Staff',
         photoURL: result.user.photoURL,
       });
-      setIsAdmin(true);
+      const admin = await checkDhabaAdminStatus(idToken);
+      setIsAdmin(admin);
     } catch (e) {
       console.error(e);
     } finally {

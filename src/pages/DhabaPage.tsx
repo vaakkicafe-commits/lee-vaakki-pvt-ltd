@@ -61,7 +61,7 @@ const LOCATIONS = {
       swiggyLink: null,  // coming soon
       zomatoLink: null,  // coming soon
       mapLink: 'https://maps.app.goo.gl/qx8JhX2z6xJLmMDA6',
-      navigateTo: 'https://leevaakkidhaba.com',  // opens old dhaba site
+      navigateTo: '/dhaba',  // internal route — stays on DhabaPage
     }
   ],
   cloud: [
@@ -95,6 +95,9 @@ function DhabaLocationSelector() {
     setIsOpen(false);
     if (loc.navigateTo.startsWith('http')) {
       window.location.href = loc.navigateTo;
+    } else if (window.location.pathname === loc.navigateTo || window.location.pathname === loc.navigateTo + '/') {
+      // Already on this page — scroll to menu instead of reloading
+      document.getElementById('dhaba-menu')?.scrollIntoView({ behavior: 'smooth' });
     } else {
       window.location.pathname = loc.navigateTo;
     }
