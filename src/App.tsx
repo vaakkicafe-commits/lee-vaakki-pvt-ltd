@@ -1563,6 +1563,8 @@ function LeeVaakkiCafeApp() {
   );
 }
 
+import DhabaAdminPage from './pages/DhabaAdminPage';
+
 // Cafe route wrapper (injects CartProvider)
 function CafeRoute() {
   return (
@@ -1580,6 +1582,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/cafe" element={<CafeRoute />} />
         <Route path="/dhaba" element={<DhabaPage />} />
+        <Route path="/dhaba/cloud/mahabalipuram" element={<DhabaAdminPage />} />
         <Route path="/farm" element={<FarmPage />} />
         <Route path="/lvtech" element={<LvTechPage />} />
         <Route path="/marine" element={<MarinePage />} />

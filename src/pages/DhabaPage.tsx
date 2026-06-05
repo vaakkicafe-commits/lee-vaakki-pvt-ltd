@@ -172,6 +172,60 @@ export default function DhabaPage() {
         </div>
       </section>
 
+      {/* ===== OUR LOCATIONS (DOMINO'S STYLE) ===== */}
+      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem 0' }}>
+        <h2 style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 900, marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+          Choose Your Location
+        </h2>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+          
+          {/* OMR Dine-in */}
+          <div style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '16px', padding: '1.5rem', position: 'relative'
+          }}>
+            <div style={{
+              position: 'absolute', top: '1.5rem', right: '1.5rem',
+              background: '#f39c12', color: '#2d0a00', fontSize: '0.65rem', fontWeight: 800, padding: '4px 8px', borderRadius: '4px'
+            }}>DINE-IN & DELIVERY</div>
+            
+            <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Chennai – OMR</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              Full dine-in experience. Hearty thalis, fresh tandoor breads, and curries. <br/>
+              Near ECR Highway, Mahabalipuram.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button onClick={() => document.getElementById('dhaba-menu')?.scrollIntoView({ behavior: 'smooth' })} style={{ background: '#25D366', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Order Direct</button>
+              <button style={{ background: '#fc8019', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Swiggy</button>
+              <button style={{ background: '#e23744', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Zomato</button>
+            </div>
+          </div>
+
+          {/* Mahabalipuram Cloud Kitchen */}
+          <div style={{
+            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: '16px', padding: '1.5rem', position: 'relative'
+          }}>
+             <div style={{
+              position: 'absolute', top: '1.5rem', right: '1.5rem',
+              background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '4px 8px', borderRadius: '4px'
+            }}>DELIVERY ONLY</div>
+            
+            <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Mahabalipuram</h3>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              Delivery-only cloud kitchen serving the Mahabalipuram area. <br/>
+              Fast delivery via Swiggy and Zomato.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button style={{ background: '#fc8019', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', opacity: 0.8 }}>Swiggy (Mahabalipuram)</button>
+              <button style={{ background: '#e23744', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', opacity: 0.8 }}>Zomato (Mahabalipuram)</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* ===== INFO STRIP ===== */}
       <section style={{
         background: '#f39c12',
