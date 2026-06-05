@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UnitNav } from '../components/UnitNav';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
+
+// ===== DATA CONFIG =====
 
 const DHABA_MENU = [
   {
@@ -46,18 +48,145 @@ const DHABA_MENU = [
   },
 ];
 
-const TIMINGS = [
-  { day: 'Mon – Fri', time: '7:00 AM – 10:00 PM' },
-  { day: 'Saturday', time: '7:00 AM – 11:00 PM' },
-  { day: 'Sunday', time: '8:00 AM – 11:00 PM' },
-];
+const LOCATIONS = {
+  dineIn: [
+    {
+      id: 'omr',
+      name: 'Chennai – OMR',
+      type: 'dinein',
+      address: 'LV Dhaba, Near ECR Highway, Mahabalipuram, Tamil Nadu – 603104',
+      phone: '+91 99999 99999',
+      timings: 'Open Daily 7 AM – 11 PM',
+      swiggyLink: '#swiggy-omr',
+      zomatoLink: '#zomato-omr',
+      mapLink: 'https://maps.google.com/?q=Lee+Vaakki+Dhaba+OMR'
+    }
+  ],
+  cloud: [
+    {
+      id: 'mahabalipuram',
+      name: 'Mahabalipuram',
+      type: 'cloud',
+      address: 'Cloud Kitchen (Delivery Only), Mahabalipuram, Tamil Nadu – 603104',
+      phone: '+91 88888 88888',
+      timings: 'Delivery Only 11 AM – 11 PM',
+      swiggyLink: '#swiggy-maha',
+      zomatoLink: '#zomato-maha',
+      mapLink: null
+    }
+  ]
+};
 
+// Find location helper
+const getLocationById = (id: string) => {
+  return LOCATIONS.dineIn.find(l => l.id === id) || LOCATIONS.cloud.find(l => l.id === id) || LOCATIONS.dineIn[0];
+};
+
+// ===== LOCATION SELECTOR COMPONENT =====
+function DhabaLocationSelector({ currentLocId, onChange }: { currentLocId: string, onChange: (id: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'dineIn' | 'cloud'>('dineIn');
+  
+  const currentLoc = getLocationById(currentLocId);
+
+  return (
+    <div style={{ position: 'relative', zIndex: 100 }}>
+      {/* Pill Button */}
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+          color: '#fff', borderRadius: '999px', padding: '0.5rem 1rem',
+          fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+          transition: 'background 0.2s'
+        }}
+      >
+        <span>{currentLoc.type === 'dinein' ? '🍽️ Dining at:' : '🛵 Delivering to:'}</span>
+        <span style={{ color: '#f39c12' }}>{currentLoc.name} ▾</span>
+      </button>
+
+      {/* Dropdown Panel */}
+      {isOpen && (
+        <>
+          <div onClick={() => setIsOpen(false)} style={{ position: 'fixed', inset: 0 }} />
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+            background: '#2d0a00', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '12px', width: '300px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            overflow: 'hidden'
+          }}>
+            {/* Tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <button 
+                onClick={() => setActiveTab('dineIn')}
+                style={{
+                  flex: 1, padding: '0.75rem', border: 'none',
+                  background: activeTab === 'dineIn' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                  color: activeTab === 'dineIn' ? '#f39c12' : '#fff',
+                  fontWeight: activeTab === 'dineIn' ? 800 : 600,
+                  fontSize: '0.8rem', cursor: 'pointer'
+                }}
+              >🍽️ Dine-in</button>
+              <button 
+                onClick={() => setActiveTab('cloud')}
+                style={{
+                  flex: 1, padding: '0.75rem', border: 'none',
+                  background: activeTab === 'cloud' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                  color: activeTab === 'cloud' ? '#f39c12' : '#fff',
+                  fontWeight: activeTab === 'cloud' ? 800 : 600,
+                  fontSize: '0.8rem', cursor: 'pointer'
+                }}
+              >🛵 Cloud Kitchen</button>
+            </div>
+            
+            {/* List */}
+            <div style={{ padding: '0.5rem' }}>
+              {(activeTab === 'dineIn' ? LOCATIONS.dineIn : LOCATIONS.cloud).map(loc => (
+                <button
+                  key={loc.id}
+                  onClick={() => { onChange(loc.id); setIsOpen(false); }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '0.75rem 1rem', border: 'none', borderRadius: '8px',
+                    background: currentLocId === loc.id ? 'rgba(243,156,18,0.15)' : 'transparent',
+                    color: '#fff', fontSize: '0.85rem', fontWeight: 600,
+                    cursor: 'pointer', marginBottom: '2px'
+                  }}
+                >
+                  {loc.name}
+                  {currentLocId === loc.id && <span style={{ float: 'right', color: '#f39c12' }}>✓</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+
+// ===== MAIN PAGE =====
 export default function DhabaPage() {
   const [activeCategory, setActiveCategory] = useState('Dal & Curries');
+  const [currentLocId, setCurrentLocId] = useState('omr'); // Default to OMR
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
 
+  // Sync to local storage
+  useEffect(() => {
+    const saved = localStorage.getItem('dhaba_location');
+    if (saved) setCurrentLocId(saved);
+  }, []);
+
+  const handleLocationChange = (id: string) => {
+    setCurrentLocId(id);
+    localStorage.setItem('dhaba_location', id);
+  };
+
   const activeGroup = DHABA_MENU.find(g => g.category === activeCategory)!;
+  const loc = getLocationById(currentLocId);
 
   const handleAdminLogin = async () => {
     try {
@@ -96,10 +225,15 @@ export default function DhabaPage() {
 
       <UnitNav unitName="Dhaba" unitIcon="🍛" accentColor="#f39c12" bgColor="#2d0a00" />
 
+      {/* Sub-header Location Bar */}
+      <div style={{ background: '#110500', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', position: 'sticky', top: '0', zIndex: 90 }}>
+         <DhabaLocationSelector currentLocId={currentLocId} onChange={handleLocationChange} />
+      </div>
+
       {/* ===== HERO ===== */}
       <section style={{
         position: 'relative', overflow: 'hidden',
-        minHeight: '420px', display: 'flex', alignItems: 'center',
+        minHeight: '400px', display: 'flex', alignItems: 'center',
         background: 'linear-gradient(135deg, #2d0a00 0%, #7b1818 50%, #c0392b 100%)',
       }}>
         <div style={{
@@ -108,13 +242,12 @@ export default function DhabaPage() {
           backgroundSize: 'cover', backgroundPosition: 'center',
           opacity: 0.18,
         }} />
-        {/* Texture overlay */}
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(to right, rgba(45,10,0,0.95) 0%, rgba(45,10,0,0.5) 60%, rgba(45,10,0,0.2) 100%)',
         }} />
 
-        <div className="fade-up" style={{ position: 'relative', zIndex: 1, maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem' }}>
+        <div className="fade-up" style={{ position: 'relative', zIndex: 1, maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
             background: 'rgba(243,156,18,0.12)',
@@ -134,98 +267,49 @@ export default function DhabaPage() {
             lineHeight: 1.1, letterSpacing: '-0.02em',
             marginBottom: '1rem',
           }}>
-            Ghar Ka Khaana,<br />
-            <span style={{ color: '#f39c12' }}>Dhaba Ka Andaaz.</span>
+            Order from Lee Vaakki Dhaba<br />
+            <span style={{ color: '#f39c12' }}>{loc.name}</span>
           </h1>
 
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', lineHeight: 1.7, maxWidth: '460px', marginBottom: '2rem' }}>
-            Wholesome home-style cooking made with love — hot rotis, slow-cooked daals, and hearty thalis that remind you of home.
+            Wholesome home-style cooking made with love. Currently ordering for {loc.type === 'dinein' ? 'Dine-in & Delivery' : 'Delivery only'}.
           </p>
 
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            {loc.type === 'dinein' && (
+              <button
+                onClick={() => document.getElementById('dhaba-menu')?.scrollIntoView({ behavior: 'smooth' })}
+                style={{
+                  background: '#25D366', color: '#fff', border: 'none',
+                  borderRadius: '999px', padding: '0.7rem 1.6rem',
+                  fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(37,211,102,0.3)',
+                }}
+              >
+                Order Direct
+              </button>
+            )}
             <a
-              href="https://wa.me/919999999999?text=Hi%20LV%20Dhaba!%20I%20would%20like%20to%20place%20an%20order."
-              target="_blank" rel="noreferrer"
+              href={loc.swiggyLink} target="_blank" rel="noreferrer"
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                background: '#25D366', color: '#fff',
+                background: '#fc8019', color: '#fff', border: 'none', textDecoration: 'none',
                 borderRadius: '999px', padding: '0.7rem 1.6rem',
-                fontWeight: 800, fontSize: '0.88rem', textDecoration: 'none',
-                boxShadow: '0 6px 20px rgba(37,211,102,0.3)',
-              }}
-            >
-              📱 Order on WhatsApp
-            </a>
-            <button
-              onClick={() => document.getElementById('dhaba-menu')?.scrollIntoView({ behavior: 'smooth' })}
-              style={{
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: '#fff', borderRadius: '999px',
-                padding: '0.7rem 1.6rem',
                 fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer',
               }}
             >
-              View Menu ↓
-            </button>
+              Order on Swiggy
+            </a>
+            <a
+              href={loc.zomatoLink} target="_blank" rel="noreferrer"
+              style={{
+                background: '#e23744', color: '#fff', border: 'none', textDecoration: 'none',
+                borderRadius: '999px', padding: '0.7rem 1.6rem',
+                fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer',
+              }}
+            >
+              Order on Zomato
+            </a>
           </div>
-        </div>
-      </section>
-
-      {/* ===== OUR LOCATIONS (DOMINO'S STYLE) ===== */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem 0' }}>
-        <h2 style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 900, marginBottom: '0.2rem' }}>
-          Choose Your Location
-        </h2>
-        <p style={{ color: '#f39c12', fontSize: '0.9rem', fontWeight: 700, marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.8rem', letterSpacing: '0.02em' }}>
-          Now serving Chennai from multiple Lee Vaakki Dhaba units – with more cities like Bangalore coming soon.
-        </p>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-          
-          {/* OMR Dine-in */}
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '16px', padding: '1.5rem', position: 'relative'
-          }}>
-            <div style={{
-              position: 'absolute', top: '1.5rem', right: '1.5rem',
-              background: '#f39c12', color: '#2d0a00', fontSize: '0.65rem', fontWeight: 800, padding: '4px 8px', borderRadius: '4px'
-            }}>DINE-IN & DELIVERY</div>
-            
-            <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Chennai – OMR</h3>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-              Full dine-in experience. Hearty thalis, fresh tandoor breads, and curries. <br/>
-              Near ECR Highway, Mahabalipuram.
-            </p>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <button onClick={() => document.getElementById('dhaba-menu')?.scrollIntoView({ behavior: 'smooth' })} style={{ background: '#25D366', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Order Direct</button>
-              <button style={{ background: '#fc8019', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Swiggy</button>
-              <button style={{ background: '#e23744', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Zomato</button>
-            </div>
-          </div>
-
-          {/* Mahabalipuram Cloud Kitchen */}
-          <div style={{
-            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-            borderRadius: '16px', padding: '1.5rem', position: 'relative'
-          }}>
-             <div style={{
-              position: 'absolute', top: '1.5rem', right: '1.5rem',
-              background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '4px 8px', borderRadius: '4px'
-            }}>DELIVERY ONLY</div>
-            
-            <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Mahabalipuram</h3>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
-              Delivery-only cloud kitchen serving the Mahabalipuram area. <br/>
-              Fast delivery via Swiggy and Zomato.
-            </p>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <button style={{ background: '#fc8019', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', opacity: 0.8 }}>Swiggy (Mahabalipuram)</button>
-              <button style={{ background: '#e23744', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', opacity: 0.8 }}>Zomato (Mahabalipuram)</button>
-            </div>
-          </div>
-
         </div>
       </section>
 
@@ -237,9 +321,9 @@ export default function DhabaPage() {
         gap: '2.5rem', flexWrap: 'wrap',
       }}>
         {[
-          { icon: '📍', text: 'Near ECR, Mahabalipuram' },
-          { icon: '🕐', text: 'Open Daily 7 AM – 11 PM' },
-          { icon: '📞', text: '+91 99999 99999' },
+          { icon: '📍', text: loc.name },
+          { icon: '🕐', text: loc.timings },
+          { icon: '📞', text: loc.phone },
           { icon: '🥗', text: 'Pure Vegetarian' },
         ].map(item => (
           <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#2d0a00', fontWeight: 700, fontSize: '0.82rem' }}>
@@ -327,34 +411,38 @@ export default function DhabaPage() {
         }}>
           <div>
             <h3 style={{ color: '#f39c12', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '1rem' }}>
-              Opening Hours
+              Selected Location Info
             </h3>
-            {TIMINGS.map(t => (
-              <div key={t.day} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 600 }}>{t.day}</span>
-                <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 800 }}>{t.time}</span>
-              </div>
-            ))}
+            <div style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.2rem' }}>Hours</div>
+              <div style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 800 }}>{loc.timings}</div>
+            </div>
+            <div style={{ padding: '0.6rem 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.2rem' }}>Contact</div>
+              <div style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 800 }}>{loc.phone}</div>
+            </div>
           </div>
           <div>
             <h3 style={{ color: '#f39c12', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '1rem' }}>
-              Find Us
+              Address
             </h3>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.7, marginBottom: '1rem' }}>
-              LV Dhaba, Near ECR Highway,<br />Mahabalipuram, Tamil Nadu – 603104
+              {loc.address}
             </p>
-            <a
-              href="https://maps.google.com"
-              target="_blank" rel="noreferrer"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-                background: 'rgba(255,255,255,0.15)', color: '#fff',
-                borderRadius: '999px', padding: '0.5rem 1.1rem',
-                fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none',
-              }}
-            >
-              📍 Get Directions
-            </a>
+            {loc.mapLink && (
+              <a
+                href={loc.mapLink}
+                target="_blank" rel="noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                  background: 'rgba(255,255,255,0.15)', color: '#fff',
+                  borderRadius: '999px', padding: '0.5rem 1.1rem',
+                  fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none',
+                }}
+              >
+                📍 Get Directions
+              </a>
+            )}
           </div>
         </div>
       </section>
