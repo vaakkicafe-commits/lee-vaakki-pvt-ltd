@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 import { InstallCafeAppButton } from './components/InstallCafeAppButton';
 import { ShoppingCart, Trash2, X, Plus, Minus, Check, Loader2, Heart } from 'lucide-react';
 import { CartProvider, useCart, MenuItem } from './CartContext';
+import LandingPage from './pages/LandingPage';
+import DhabaPage from './pages/DhabaPage';
+import FarmPage from './pages/FarmPage';
+import LvTechPage from './pages/LvTechPage';
+import MarinePage from './pages/MarinePage';
 
 // ---- Menu Data ----
 const ALL_MENU_ITEMS: MenuItem[] = [
@@ -1557,11 +1563,29 @@ function LeeVaakkiCafeApp() {
   );
 }
 
-// Wrapper to inject CartProvider
-export default function App() {
+// Cafe route wrapper (injects CartProvider)
+function CafeRoute() {
   return (
     <CartProvider>
       <LeeVaakkiCafeApp />
     </CartProvider>
+  );
+}
+
+// Root app with full routing
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/cafe" element={<CafeRoute />} />
+        <Route path="/dhaba" element={<DhabaPage />} />
+        <Route path="/farm" element={<FarmPage />} />
+        <Route path="/lvtech" element={<LvTechPage />} />
+        <Route path="/marine" element={<MarinePage />} />
+        {/* Fallback — redirect unknown paths to landing */}
+        <Route path="*" element={<LandingPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
