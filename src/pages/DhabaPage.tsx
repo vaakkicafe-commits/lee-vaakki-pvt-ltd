@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { UnitNav } from '../components/UnitNav';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
@@ -60,7 +60,8 @@ const LOCATIONS = {
       orderDirectUrl: 'https://leevaakkidhaba.com',
       swiggyLink: null,  // coming soon
       zomatoLink: null,  // coming soon
-      mapLink: 'https://maps.app.goo.gl/qx8JhX2z6xJLmMDA6'
+      mapLink: 'https://maps.app.goo.gl/qx8JhX2z6xJLmMDA6',
+      navigateTo: 'https://leevaakkidhaba.com',  // opens old dhaba site
     }
   ],
   cloud: [
@@ -74,7 +75,8 @@ const LOCATIONS = {
       orderDirectUrl: null,
       swiggyLink: null,  // coming soon
       zomatoLink: null,  // coming soon
-      mapLink: null
+      mapLink: null,
+      navigateTo: '/dhaba/cloud/mahabalipuram',  // opens cloud kitchen page
     }
   ]
 };
@@ -85,16 +87,23 @@ const getLocationById = (id: string) => {
 };
 
 // ===== LOCATION SELECTOR COMPONENT =====
-function DhabaLocationSelector({ currentLocId, onChange }: { currentLocId: string, onChange: (id: string) => void }) {
+function DhabaLocationSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'dineIn' | 'cloud'>('dineIn');
-  
-  const currentLoc = getLocationById(currentLocId);
+
+  const handleSelect = (loc: any) => {
+    setIsOpen(false);
+    if (loc.navigateTo.startsWith('http')) {
+      window.location.href = loc.navigateTo;
+    } else {
+      window.location.pathname = loc.navigateTo;
+    }
+  };
 
   return (
     <div style={{ position: 'relative', zIndex: 100 }}>
       {/* Pill Button */}
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
           display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -104,8 +113,7 @@ function DhabaLocationSelector({ currentLocId, onChange }: { currentLocId: strin
           transition: 'background 0.2s'
         }}
       >
-        <span>{currentLoc.type === 'dinein' ? '🍽️ Dining at:' : '🛵 Delivering to:'}</span>
-        <span style={{ color: '#f39c12' }}>{currentLoc.name} ▾</span>
+        <span>📍 Select Location ▾</span>
       </button>
 
       {/* Dropdown Panel */}
@@ -113,53 +121,63 @@ function DhabaLocationSelector({ currentLocId, onChange }: { currentLocId: strin
         <>
           <div onClick={() => setIsOpen(false)} style={{ position: 'fixed', inset: 0 }} />
           <div style={{
-            position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+            position: 'absolute', top: 'calc(100% + 8px)', right: 0,
             background: '#2d0a00', border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '12px', width: '300px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
             overflow: 'hidden'
           }}>
             {/* Tabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <button 
+              <button
                 onClick={() => setActiveTab('dineIn')}
                 style={{
                   flex: 1, padding: '0.75rem', border: 'none',
                   background: activeTab === 'dineIn' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                  color: activeTab === 'dineIn' ? '#f39c12' : '#fff',
+                  color: activeTab === 'dineIn' ? '#f39c12' : 'rgba(255,255,255,0.6)',
                   fontWeight: activeTab === 'dineIn' ? 800 : 600,
                   fontSize: '0.8rem', cursor: 'pointer'
                 }}
               >🍽️ Dine-in</button>
-              <button 
+              <button
                 onClick={() => setActiveTab('cloud')}
                 style={{
                   flex: 1, padding: '0.75rem', border: 'none',
                   background: activeTab === 'cloud' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                  color: activeTab === 'cloud' ? '#f39c12' : '#fff',
+                  color: activeTab === 'cloud' ? '#f39c12' : 'rgba(255,255,255,0.6)',
                   fontWeight: activeTab === 'cloud' ? 800 : 600,
                   fontSize: '0.8rem', cursor: 'pointer'
                 }}
               >🛵 Cloud Kitchen</button>
             </div>
-            
+
             {/* List */}
             <div style={{ padding: '0.5rem' }}>
               {(activeTab === 'dineIn' ? LOCATIONS.dineIn : LOCATIONS.cloud).map(loc => (
                 <button
                   key={loc.id}
-                  onClick={() => { onChange(loc.id); setIsOpen(false); }}
+                  onClick={() => handleSelect(loc)}
                   style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    padding: '0.75rem 1rem', border: 'none', borderRadius: '8px',
-                    background: currentLocId === loc.id ? 'rgba(243,156,18,0.15)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    width: '100%', textAlign: 'left',
+                    padding: '0.85rem 1rem', border: 'none', borderRadius: '8px',
+                    background: 'transparent',
                     color: '#fff', fontSize: '0.85rem', fontWeight: 600,
-                    cursor: 'pointer', marginBottom: '2px'
+                    cursor: 'pointer', marginBottom: '2px',
+                    transition: 'background 0.15s'
                   }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(243,156,18,0.1)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  {loc.name}
-                  {currentLocId === loc.id && <span style={{ float: 'right', color: '#f39c12' }}>✓</span>}
+                  <span>{loc.name}</span>
+                  <span style={{ color: '#f39c12', fontSize: '0.75rem' }}>
+                    {activeTab === 'dineIn' ? 'Open site →' : 'Open kitchen →'}
+                  </span>
                 </button>
               ))}
+            </div>
+
+            <div style={{ padding: '0.6rem 1rem', borderTop: '1px solid rgba(255,255,255,0.07)', fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>
+              Now serving Chennai · Bangalore coming soon
             </div>
           </div>
         </>
@@ -172,23 +190,12 @@ function DhabaLocationSelector({ currentLocId, onChange }: { currentLocId: strin
 // ===== MAIN PAGE =====
 export default function DhabaPage() {
   const [activeCategory, setActiveCategory] = useState('Dal & Curries');
-  const [currentLocId, setCurrentLocId] = useState('omr'); // Default to OMR
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
 
-  // Sync to local storage
-  useEffect(() => {
-    const saved = localStorage.getItem('dhaba_location');
-    if (saved) setCurrentLocId(saved);
-  }, []);
-
-  const handleLocationChange = (id: string) => {
-    setCurrentLocId(id);
-    localStorage.setItem('dhaba_location', id);
-  };
-
   const activeGroup = DHABA_MENU.find(g => g.category === activeCategory)!;
-  const loc = getLocationById(currentLocId);
+  // Default info shown is OMR dine-in
+  const loc = LOCATIONS.dineIn[0];
 
   const handleAdminLogin = async () => {
     try {
@@ -228,8 +235,9 @@ export default function DhabaPage() {
       <UnitNav unitName="Dhaba" unitIcon="🍛" accentColor="#f39c12" bgColor="#2d0a00" />
 
       {/* Sub-header Location Bar */}
-      <div style={{ background: '#110500', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', position: 'sticky', top: '0', zIndex: 90 }}>
-         <DhabaLocationSelector currentLocId={currentLocId} onChange={handleLocationChange} />
+      <div style={{ background: '#110500', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: '0', zIndex: 90 }}>
+        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem', fontWeight: 600 }}>Now serving Chennai · Bangalore coming soon</span>
+        <DhabaLocationSelector />
       </div>
 
       {/* ===== HERO ===== */}
