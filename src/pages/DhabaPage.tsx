@@ -174,9 +174,12 @@ export default function DhabaPage() {
 
       {/* ===== OUR LOCATIONS (DOMINO'S STYLE) ===== */}
       <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem 0' }}>
-        <h2 style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 900, marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+        <h2 style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 900, marginBottom: '0.2rem' }}>
           Choose Your Location
         </h2>
+        <p style={{ color: '#f39c12', fontSize: '0.9rem', fontWeight: 700, marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.8rem', letterSpacing: '0.02em' }}>
+          Now serving Chennai from multiple Lee Vaakki Dhaba units – with more cities like Bangalore coming soon.
+        </p>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
           
