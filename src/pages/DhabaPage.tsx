@@ -57,8 +57,9 @@ const LOCATIONS = {
       address: 'LV Dhaba, Near ECR Highway, Mahabalipuram, Tamil Nadu – 603104',
       phone: '+91 99999 99999',
       timings: 'Open Daily 7 AM – 11 PM',
-      swiggyLink: '#swiggy-omr',
-      zomatoLink: '#zomato-omr',
+      orderDirectUrl: 'https://leevaakkidhaba.com',
+      swiggyLink: null,  // coming soon
+      zomatoLink: null,  // coming soon
       mapLink: 'https://maps.google.com/?q=Lee+Vaakki+Dhaba+OMR'
     }
   ],
@@ -70,8 +71,9 @@ const LOCATIONS = {
       address: 'Cloud Kitchen (Delivery Only), Mahabalipuram, Tamil Nadu – 603104',
       phone: '+91 88888 88888',
       timings: 'Delivery Only 11 AM – 11 PM',
-      swiggyLink: '#swiggy-maha',
-      zomatoLink: '#zomato-maha',
+      orderDirectUrl: null,
+      swiggyLink: null,  // coming soon
+      zomatoLink: null,  // coming soon
       mapLink: null
     }
   ]
@@ -275,40 +277,56 @@ export default function DhabaPage() {
             Wholesome home-style cooking made with love. Currently ordering for {loc.type === 'dinein' ? 'Dine-in & Delivery' : 'Delivery only'}.
           </p>
 
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            {loc.type === 'dinein' && (
-              <button
-                onClick={() => document.getElementById('dhaba-menu')?.scrollIntoView({ behavior: 'smooth' })}
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {(loc as any).orderDirectUrl && (
+              <a
+                href={(loc as any).orderDirectUrl}
+                target="_blank" rel="noreferrer"
                 style={{
-                  background: '#25D366', color: '#fff', border: 'none',
+                  background: '#25D366', color: '#fff', border: 'none', textDecoration: 'none',
                   borderRadius: '999px', padding: '0.7rem 1.6rem',
                   fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer',
                   boxShadow: '0 6px 20px rgba(37,211,102,0.3)',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem'
                 }}
               >
-                Order Direct
-              </button>
+                🛒 Order Direct
+              </a>
             )}
-            <a
-              href={loc.swiggyLink} target="_blank" rel="noreferrer"
-              style={{
-                background: '#fc8019', color: '#fff', border: 'none', textDecoration: 'none',
+            {loc.swiggyLink ? (
+              <a href={loc.swiggyLink} target="_blank" rel="noreferrer"
+                style={{
+                  background: '#fc8019', color: '#fff', border: 'none', textDecoration: 'none',
+                  borderRadius: '999px', padding: '0.7rem 1.6rem',
+                  fontWeight: 700, fontSize: '0.88rem',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem'
+                }}
+              >Order on Swiggy</a>
+            ) : (
+              <span style={{
+                background: 'rgba(252,128,25,0.15)', color: 'rgba(252,128,25,0.6)',
+                border: '1px dashed rgba(252,128,25,0.4)',
                 borderRadius: '999px', padding: '0.7rem 1.6rem',
-                fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer',
-              }}
-            >
-              Order on Swiggy
-            </a>
-            <a
-              href={loc.zomatoLink} target="_blank" rel="noreferrer"
-              style={{
-                background: '#e23744', color: '#fff', border: 'none', textDecoration: 'none',
+                fontWeight: 700, fontSize: '0.78rem'
+              }}>Swiggy – Coming Soon</span>
+            )}
+            {loc.zomatoLink ? (
+              <a href={loc.zomatoLink} target="_blank" rel="noreferrer"
+                style={{
+                  background: '#e23744', color: '#fff', border: 'none', textDecoration: 'none',
+                  borderRadius: '999px', padding: '0.7rem 1.6rem',
+                  fontWeight: 700, fontSize: '0.88rem',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem'
+                }}
+              >Order on Zomato</a>
+            ) : (
+              <span style={{
+                background: 'rgba(226,55,68,0.15)', color: 'rgba(226,55,68,0.6)',
+                border: '1px dashed rgba(226,55,68,0.4)',
                 borderRadius: '999px', padding: '0.7rem 1.6rem',
-                fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer',
-              }}
-            >
-              Order on Zomato
-            </a>
+                fontWeight: 700, fontSize: '0.78rem'
+              }}>Zomato – Coming Soon</span>
+            )}
           </div>
         </div>
       </section>
