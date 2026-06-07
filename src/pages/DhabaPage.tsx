@@ -57,11 +57,11 @@ const LOCATIONS = {
       address: 'LV Dhaba, Near ECR Highway, Mahabalipuram, Tamil Nadu – 603104',
       phone: '+91 99999 99999',
       timings: 'Open Daily 7 AM – 11 PM',
-      orderDirectUrl: 'https://leevaakkidhaba.com',
+      orderDirectUrl: '/dhaba/dinein',
       swiggyLink: null,  // coming soon
       zomatoLink: null,  // coming soon
       mapLink: 'https://maps.app.goo.gl/qx8JhX2z6xJLmMDA6',
-      navigateTo: 'https://leevaakkidhaba.com',  // external route — opens Dhaba site
+      navigateTo: '/dhaba/dinein',  // external route — opens Dhaba site
     }
   ],
   cloud: [

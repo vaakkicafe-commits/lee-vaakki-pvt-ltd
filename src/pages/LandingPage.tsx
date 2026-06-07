@@ -26,7 +26,7 @@ const UNITS = [
     gradient: 'linear-gradient(135deg, #7b1818 0%, #c0392b 100%)',
     accent: '#f39c12',
     tag: 'DINE IN · TAKEAWAY',
-    route: 'https://leevaakkidhaba.com',
+    route: '/dhaba',
     live: true,
     liveLabel: 'Now Serving',
   },

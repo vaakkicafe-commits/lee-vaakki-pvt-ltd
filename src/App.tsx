@@ -7,6 +7,7 @@ import { ShoppingCart, Trash2, X, Plus, Minus, Check, Loader2, Heart } from 'luc
 import { CartProvider, useCart, MenuItem } from './CartContext';
 import LandingPage from './pages/LandingPage';
 import DhabaPage from './pages/DhabaPage';
+import DhabaGateway from './pages/DhabaGateway';
 import FarmPage from './pages/FarmPage';
 import LvTechPage from './pages/LvTechPage';
 import MarinePage from './pages/MarinePage';
@@ -1580,13 +1581,13 @@ function CafeRoute() {
 
 // Domain-based routing component
 function DomainRouter() {
-  const hostname = window.location.hostname;
+  const hostname = window.location.hostname.toLowerCase();
   
-  if (hostname === 'leevaakkicafe.com' || hostname === 'www.leevaakkicafe.com') {
+  if (hostname.includes('cafe')) {
     return <Navigate to="/cafe" replace />;
   }
   
-  if (hostname === 'leevaakkidhaba.com' || hostname === 'www.leevaakkidhaba.com') {
+  if (hostname.includes('dhaba')) {
     return <Navigate to="/dhaba" replace />;
   }
 
@@ -1601,7 +1602,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={<DomainRouter />} />
         <Route path="/cafe" element={<CafeRoute />} />
-        <Route path="/dhaba" element={<DhabaPage />} />
+        {/* Dhaba Routes */}
+        <Route path="/dhaba" element={<DhabaGateway />} />
+        <Route path="/dhaba/dinein" element={<DhabaPage />} />
         <Route path="/dhaba/cloud/mahabalipuram" element={<DhabaAdminPage />} />
         <Route path="/farm" element={<FarmPage />} />
         <Route path="/lvtech" element={<LvTechPage />} />
